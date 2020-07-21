@@ -23,6 +23,7 @@ function [tf] = check_for_pcis()
     if strcmp(getenv('USER'),'kwesirutledge')
         addpath(genpath('/Users/kwesirutledge/Documents/MATLAB/Research/pcis/'))
         addpath(genpath('/Users/kwesirutledge/Documents/MATLAB/toolboxes/tbxmanager/'))
+        addpath(genpath('~/External_Libraries/mosek/9.2/toolbox/r2015a/'))
     end
     
     %% Check again for arcs and return a final answer
