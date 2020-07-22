@@ -53,7 +53,7 @@ classdef ExpXElement
 		function tf = ne( obj , comparison_elt )
 			%Description:
 			%	Compares the two ExpXElement objects.
-			%	True if and only if the q and c values are equal.
+			%	False if and only if the q and c values are equal.
 
 			%% Check Inputs
 			if ~isa(comparison_elt,'ExpXElement')
@@ -91,6 +91,57 @@ classdef ExpXElement
 				end
 			end
 
+		end
+
+		function set_output = union_with_set( obj , ExpXElementList_in )
+			%Description:
+			%	Performs the set union of the element obj with the set defined
+			%	by ExpXElementList_in.
+			%
+
+
+			%% Algorithm
+
+			%If obj is not already in the list, then add it.
+			if obj.find_in_list( ExpXElementList_in ) == -1
+				set_output = [ExpXElementList_in,obj];
+			else
+				set_output = ExpXElementList_in;
+			end
+
+		end
+
+		function post_Q = get_PostQ_u( obj , ExpF_in , num_U )
+			%Description:
+			%	Computes each set PostQ_u for each u as defined in Algorithm 2's REFINE
+			%	algorithm.
+			%	It is the set of cover elements such that from the current ExpXElement
+			%	one can reach the cover element q.
+			%
+			%Outputs
+			%	post_Q - A cell array of arrays of Polyhedron() objects.
+			%
+			%Note to self:
+			%	- It is possible that this function will create duplicate elements
+			%	  in the output.
+
+			%% Constants
+
+			post_Q = cell(1,num_U);
+
+			%% Algorithm
+
+			for u = 1:num_U
+				%u is given.				
+
+				for expf_idx = 1:length(ExpF_in)
+					temp_expf_elt = ExpF_in(expf_idx);
+
+					if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
+						post_Q{u} = [post_Q{u},temp_expf_elt.ExpXEltPrime.q];
+					end
+				end
+			end
 
 		end
 
