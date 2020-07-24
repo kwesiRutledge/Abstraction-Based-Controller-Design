@@ -92,8 +92,8 @@ for maximal_elt_idx = 1:length(maximal_subset_ExpX)
 	end
 
 	%possibly refine.
-	if temp_expf_elt.c <= temp_expf_elt.q
-
+	if temp_maximal_elt.c <= temp_maximal_elt.q
+		disp('Call REFINE here.')
 	end
 
 end

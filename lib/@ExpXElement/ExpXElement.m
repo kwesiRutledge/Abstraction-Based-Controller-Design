@@ -111,7 +111,7 @@ classdef ExpXElement
 
 		end
 
-		function post_Q = get_PostQ_u( obj , ExpF_in , num_U )
+		function post_Q = get_PostQ_u( obj , EXP_F_in , num_U )
 			%Description:
 			%	Computes each set PostQ_u for each u as defined in Algorithm 2's REFINE
 			%	algorithm.
@@ -134,8 +134,8 @@ classdef ExpXElement
 			for u = 1:num_U
 				%u is given.				
 
-				for expf_idx = 1:length(ExpF_in)
-					temp_expf_elt = ExpF_in(expf_idx);
+				for expf_idx = 1:length(EXP_F_in)
+					temp_expf_elt = EXP_F_in(expf_idx);
 
 					if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
 						post_Q{u} = [post_Q{u},temp_expf_elt.ExpXEltPrime.q];
@@ -144,6 +144,22 @@ classdef ExpXElement
 			end
 
 		end
+
+		function [ Cover_out , EXP_Gamma_out , EXP_X_out , EXP_F_out ] = ...
+			refine( obj , System_in , Cover_in , EXP_Gamma_in , EXP_F_in , EXP_X_in )
+			%Description:
+			%	Refines the sets Cover_in , EXP_Gamma_in , EXP_F_in , EXP_X_in
+			%	using the current EXP_X element.
+
+			%% Constants
+
+			%% Algorithm
+
+			post_Q = obj.get_PostQ_u( obj , EXP_F_in , num_U );
+
+			
+
+		end 
 
 	end
 
