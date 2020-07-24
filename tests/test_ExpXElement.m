@@ -81,8 +81,8 @@ function test1_get_PostQ_u(testCase)
 	temp_PostQ = temp_ExpXElement.get_PostQ_u( example_ExpF1 , num_U );
 
 	assert((length(temp_PostQ) == 2) && ...
-			( temp_PostQ{1} == example_ExpX1(2).q ) && ...
-			( temp_PostQ{2} == example_ExpX1(1).q ) )
+			( temp_PostQ(1) == PolyUnion(example_ExpX1(2).q) ) && ...
+			( temp_PostQ(2) == PolyUnion(example_ExpX1(1).q) ) )
 
 end
 
@@ -100,6 +100,8 @@ function test2_get_PostQ_u(testCase)
 	%Create an example ExpF set
 	[example_ExpF1, example_ExpX1, num_U] = get_simple_ExpF1();
 
+	example_ExpF1 = [ example_ExpF1 , ExpFElement( expx1 , 2 , expx1 ) ]
+
 	%Create a temporary expx1
 	temp_ExpXElement = example_ExpX1(3);
 
@@ -107,7 +109,7 @@ function test2_get_PostQ_u(testCase)
 	temp_PostQ = temp_ExpXElement.get_PostQ_u( example_ExpF1 , num_U )
 
 	assert(	(length(temp_PostQ) == 2) && ...
-			(temp_PostQ{1} == example_ExpX1(4).q ) && ...
+			(temp_PostQ(1) == example_ExpX1(4).q ) && ...
 			isempty(temp_PostQ{2}) )
 
 end

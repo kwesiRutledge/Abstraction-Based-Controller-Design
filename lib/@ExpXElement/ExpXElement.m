@@ -127,20 +127,29 @@ classdef ExpXElement
 
 			%% Constants
 
-			post_Q = cell(1,num_U);
+			% post_Q = [];
 
 			%% Algorithm
 
 			for u = 1:num_U
 				%u is given.				
+				temp_post_Q_u = [];
 
 				for expf_idx = 1:length(EXP_F_in)
 					temp_expf_elt = EXP_F_in(expf_idx);
 
 					if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
-						post_Q{u} = [post_Q{u},temp_expf_elt.ExpXEltPrime.q];
+						temp_post_Q_u = [temp_post_Q_u, temp_expf_elt.ExpXEltPrime.q];
 					end
 				end
+
+				%Append to array post_Q
+				if isempty(temp_post_Q_u)
+					post_Q{u} = temp_post_Q_u;
+				else
+					post_Q{u} = PolyUnion(temp_post_Q_u);
+				end
+
 			end
 
 		end
@@ -157,6 +166,7 @@ classdef ExpXElement
 
 			post_Q = obj.get_PostQ_u( obj , EXP_F_in , num_U );
 
+			s = System_in.pre_input_dependent( post_Q );
 			
 
 		end 

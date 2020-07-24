@@ -21,7 +21,9 @@ X = Polyhedron('lb',-2,'ub',2);
 X0 = X;
 
 num_U = 2; %There are only two inputs allowed
-F = @one_dim_example_transition;
+%F = @one_dim_example_transition;
+DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
+			Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
 
 num_y = 3; %There are only three outputs.
 H = @one_dim_example_output;
@@ -32,6 +34,8 @@ Hinv = [ Polyhedron('lb',-2,'ub',-1) , ...
 Y_labels{1} = 'A';
 Y_labels{2} = 'B';
 Y_labels{3} = 'C';
+
+st_oneD = SystemTuple(X,X0,DynList,Y,H);
 
 disp('- Defined Constants')
 
@@ -93,7 +97,7 @@ for maximal_elt_idx = 1:length(maximal_subset_ExpX)
 
 	%possibly refine.
 	if temp_maximal_elt.c <= temp_maximal_elt.q
-		disp('Call REFINE here.')
+		s = st_oneD.pre_input_dependent();
 	end
 
 end
