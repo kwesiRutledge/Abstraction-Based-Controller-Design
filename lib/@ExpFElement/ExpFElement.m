@@ -2,6 +2,18 @@ classdef ExpFElement
 	%Description:
 	%	This class represents elements of the set Exp_F from Algorithm 2 of the paper
 	%	from Majumdar, Ozay and Schmuck.
+	%
+	%Properties:
+	%	ExpXElt
+	%	u
+	%	ExpXEltPrime
+	%
+	%Methods
+	%	- ExpFElement
+	%	- eq ( or ==)
+	%	- ne ( or ~=)
+	%	- find_in_list
+	%	- union_with_set
 
 	properties
 		ExpXElt;

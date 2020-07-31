@@ -35,7 +35,7 @@ Y_labels{1} = 'A';
 Y_labels{2} = 'B';
 Y_labels{3} = 'C';
 
-st_oneD = SystemTuple(X,X0,DynList,Y,H);
+st_oneD = SystemTuple(X,X0,DynList,num_y,H);
 
 disp('- Defined Constants')
 
@@ -67,6 +67,8 @@ ExpF0 = [];
 loop_condition = (length(ExpX0) == 0);
 ExpX = ExpX0;
 ExpF = ExpF0;
+Cover = Cover0;
+ExpGamma = ExpGamma0;
 
 %while loop_condition
 ExpGamma_i = EXPX_to_EXP_Gamma( ExpX );
@@ -77,7 +79,7 @@ for maximal_elt_idx = 1:length(maximal_subset_ExpX)
 	for u = 1:num_U
 		for y = 1:num_y
 			v_prime = [ temp_maximal_elt.v , u , y ];
-			c_prime = intersect(F( temp_maximal_elt.c , u ), Hinv(y) );
+			c_prime = intersect(st_oneD.F( temp_maximal_elt.c , u ), Hinv(y) );
 			Q_prime = get_minimal_covering_subsets_for( c_prime , Cover0 );
 
 			for q_prime_idx = 1:length(Q_prime)
@@ -97,7 +99,7 @@ for maximal_elt_idx = 1:length(maximal_subset_ExpX)
 
 	%possibly refine.
 	if temp_maximal_elt.c <= temp_maximal_elt.q
-		s = st_oneD.pre_input_dependent();
+		[ Cover , ExpF , ExpGamma , ExpX ] = temp_maximal_elt.refine( st_oneD , Cover , ExpF , ExpGamma , ExpX )
 	end
 
 end

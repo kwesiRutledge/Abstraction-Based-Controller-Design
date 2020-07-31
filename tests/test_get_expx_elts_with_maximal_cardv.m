@@ -69,7 +69,7 @@ function test2(testCase)
 
 	%% Algorithm
 
-	temp_output = get_expx_elts_with_maximal_cardv( ExpX2 )
+	temp_output = get_expx_elts_with_maximal_cardv( ExpX2 );
 
 	%Verify that the output contains each element in ExpX0
 

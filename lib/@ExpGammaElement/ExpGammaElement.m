@@ -1,6 +1,16 @@
 classdef ExpGammaElement
 	%Description:
 	%	A 2-tuple of elements where the first item is the subset of the state space and the second item is also a subset of the state space.
+	%
+	%Properties:
+	%	q
+	%	c
+	%
+	%Methods:
+	%	- ExpGammaElement
+	%	- eq (or ==)
+	%	- ne (or ~=)
+	%	- find_in_list
 
 	properties
 		q;
@@ -16,30 +26,24 @@ classdef ExpGammaElement
 			%	elt_out = ExpGammaElement( exp_x_elt_in )
 
 			%% Input Processing %%
-			if isa(varargin{1},'ExpXElement')
-				input_type = 'ExpXElement';
-			elseif isnumeric(varargin{1})
-				input_type = 'Numeric';
-			else
-				error('Unexpected input type to ExpGammaElement()!')
-			end
+			input_class = class(varargin{1});
 
 			%% Algorithm %%
 
-			switch input_type
+			switch input_class
 				case 'ExpXElement'
 					exp_x_elt_in = varargin{1};
 
 					elt.q = exp_x_elt_in.q;
 					elt.c = exp_x_elt_in.c;
-				case 'Numeric'
+				case {'double','Polyhedron'}
 					q_in = varargin{1};
 					c_in = varargin{2};
 
 					elt.q = q_in;
 					elt.c = c_in;
 				otherwise
-					error('Unrecognized input type.')
+					error(['Unrecognized input type (' input_class ').'])
 			end
 		end
 

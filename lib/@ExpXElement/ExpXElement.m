@@ -128,46 +128,131 @@ classdef ExpXElement
 			%% Constants
 
 			% post_Q = [];
+			%type_of_q = class(obj.q);
 
 			%% Algorithm
 
-			for u = 1:num_U
-				%u is given.				
-				temp_post_Q_u = [];
+			switch class(obj.q) 
+				case 'Polyhedron'
+					for u = 1:num_U
+						%u is given.				
+						temp_post_Q_u = [];
 
-				for expf_idx = 1:length(EXP_F_in)
-					temp_expf_elt = EXP_F_in(expf_idx);
+						for expf_idx = 1:length(EXP_F_in)
+							temp_expf_elt = EXP_F_in(expf_idx);
 
-					if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
-						temp_post_Q_u = [temp_post_Q_u, temp_expf_elt.ExpXEltPrime.q];
+							if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
+								temp_post_Q_u = [temp_post_Q_u, temp_expf_elt.ExpXEltPrime.q];
+							end
+						end
+
+						%Append to array post_Q
+						if isempty(temp_post_Q_u)
+							post_Q{u} = temp_post_Q_u;
+						else
+							post_Q{u} = PolyUnion(temp_post_Q_u);
+						end
+
 					end
-				end
+				case 'PolyUnion'
+					for u = 1:num_U
+						%u is given.				
+						temp_post_Q_u = [];
 
-				%Append to array post_Q
-				if isempty(temp_post_Q_u)
-					post_Q{u} = temp_post_Q_u;
-				else
-					post_Q{u} = PolyUnion(temp_post_Q_u);
-				end
+						for expf_idx = 1:length(EXP_F_in)
+							temp_expf_elt = EXP_F_in(expf_idx);
 
+							if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
+								temp_post_Q_u = [temp_post_Q_u, temp_expf_elt.ExpXEltPrime.q.Set];
+							end
+						end
+
+						%Append to array post_Q
+						if isempty(temp_post_Q_u)
+							post_Q{u} = temp_post_Q_u;
+						else
+							temp_union = PolyUnion(temp_post_Q_u);
+							temp_union.reduce();
+							post_Q{u} = temp_union;
+						end
+
+					end
+				otherwise
+					error('Unexpected class of obj.q. Expecting Polyhedron or PolyUnion ')
 			end
+			
 
 		end
 
-		function [ Cover_out , EXP_Gamma_out , EXP_X_out , EXP_F_out ] = ...
-			refine( obj , System_in , Cover_in , EXP_Gamma_in , EXP_F_in , EXP_X_in )
+		function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
+			refine( obj , System_in , Cover_in , EXP_F_in , EXP_Gamma_in , EXP_X_in )
 			%Description:
 			%	Refines the sets Cover_in , EXP_Gamma_in , EXP_F_in , EXP_X_in
 			%	using the current EXP_X element.
 
+			%% Input Processing
+
+
 			%% Constants
 
+			%% Initialize Sets
+			Cover_out = Cover_in;
+			EXP_Gamma_out = EXP_Gamma_in;
+			EXP_F_out = EXP_F_in;
+			EXP_X_out = EXP_X_in;
+ 
 			%% Algorithm
 
-			post_Q = obj.get_PostQ_u( obj , EXP_F_in , num_U );
+			post_Q = obj.get_PostQ_u( EXP_F_in , System_in.nu() );
 
 			s = System_in.pre_input_dependent( post_Q );
 			
+			%disp(class(s))
+
+			%Check if s <= q
+
+			% disp(class(s))
+			% disp(class(obj.q))
+
+			if PolyUnion_subseteq( s , obj.q )
+				%Update the cover
+				Cover_out = [Cover_out,s];
+
+				%Go through all elements of EXP_X_in
+				for expx_idx = 1:length(EXP_X_in)
+					expx_elt = EXP_X_in(expx_idx);
+
+					%Only investigate elements that match in the q dimension
+					if obj.q ~= expx_elt.q
+						continue;
+					end
+
+					disp(['expx_idx = ' num2str(expx_idx)])
+
+					%For the expx_elt's whose q value matches obj.q,
+					%check the c value.
+					if PolyUnion_subseteq( expx_elt.c , s )
+						EXP_Gamma_out = change_tuples_in_list( EXP_Gamma_out , expx_elt , s );
+						EXP_F_out = change_tuples_in_list( EXP_F_out , expx_elt , s );
+						EXP_X_out = change_tuples_in_list( EXP_X_out , expx_elt , s );
+					end
+
+				end
+
+				%Iterate through all elements of EXP_F
+				for expf_idx = 1:length(EXP_F_in)
+					expf_elt = EXP_F_in(expf_idx);
+
+					source_expx = expf_elt.ExpXElt;
+
+					if ( expf_elt.ExpXEltPrime.q == s ) && (source_expx.c <= source_expx.q)
+						[ Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out ] = source_expx.refine( ...
+							System_in , Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out );
+					end
+
+				end
+
+			end
 
 		end 
 

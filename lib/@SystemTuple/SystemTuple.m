@@ -17,9 +17,9 @@ classdef SystemTuple
 			%Description:
 			%
 			%Usage:
-			%	S = SystemTuple(X,X0,DynList,Y,H)
-			%	S = SystemTuple(X,X0,DynList,Y,H,'Don''t Check Inputs')
-			%	S = SystemTuple(X,X0,DynList,Y,H,'YLabels',labels_cell_arr)
+			%	S = SystemTuple(X,X0,DynList,numY,H)
+			%	S = SystemTuple(X,X0,DynList,numY,H,'Don''t Check Inputs')
+			%	S = SystemTuple(X,X0,DynList,numY,H,'YLabels',labels_cell_arr)
 
 			%% Input Processing
 
@@ -168,7 +168,13 @@ classdef SystemTuple
 
 			X_pre = X_pre_u(1);
 			for u_idx = 2:obj.nu()
-				X_pre = X_pre.intersect( X_pre_u( u_idx ) );
+				if isa(X_pre,'Polyhedron')
+					X_pre = X_pre.intersect( X_pre_u( u_idx ) );
+				elseif isa(X_pre,'PolyUnion')
+					X_pre = IntersectPolyUnion( X_pre , X_pre_u( u_idx ) );
+				else
+					error(['Unexpected class of X_pre: ' class(X_pre)])
+				end
 			end
 
 

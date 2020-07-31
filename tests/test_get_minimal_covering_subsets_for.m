@@ -83,7 +83,7 @@ function test3_behavior(testCase)
 
 	%% Algorithm
 	Q_prime = get_minimal_covering_subsets_for(q3,Cover3);
-	disp(length(Q_prime))
+	%disp(length(Q_prime))
 
 	assert( (length(Q_prime) == 2) && ...
 			(Q_prime(1) <= expected_output(1)) && (expected_output(1) <= Q_prime(1)) && ...
