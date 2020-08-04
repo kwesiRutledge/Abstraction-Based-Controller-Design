@@ -1,6 +1,10 @@
 function tf = PolyUnion_subseteq( pu1 , pu2 )
 	%Description:
 	%	Returns true if PolyUnion pu1 is a subset of PolyUnion pu2
+	%
+	%Notes to self:
+	%	It turns out that a subset operator is implemented for PolyUnion objects.
+	%	Please use pu1 <= pu2 which is built into MPT3
 
 	%% Input Processing 
 

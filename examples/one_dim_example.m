@@ -10,6 +10,9 @@ path_to_repo_top = '../';
 addpath(genpath([path_to_repo_top 'lib/' ]))
 
 pcis_enabled = check_for_pcis();
+gurobi_enabled = check_for_gurobi();
+
+mptopt('lpsolver','GUROBI');
 
 if ~pcis_enabled
 	error('PCIS and Polyhedron are not currently included in the path. Make sure to include them before running this example.')
@@ -17,92 +20,145 @@ end
 
 %% Constants
 
-X = Polyhedron('lb',-2,'ub',2);
+dom = Polyhedron('lb',-2,'ub',2);
+
+X = PolyUnion(dom);
 X0 = X;
 
 num_U = 2; %There are only two inputs allowed
 %F = @one_dim_example_transition;
-DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
-			Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+DynList = [ Dyn(1,1,0,dom*Polyhedron('lb',0,'ub',0)) , ...
+			Dyn(1,-1,0,dom*Polyhedron('lb',0,'ub',0)) ];
 
 num_y = 3; %There are only three outputs.
 H = @one_dim_example_output;
-Hinv = [ Polyhedron('lb',-2,'ub',-1) , ...
-		 Polyhedron('lb',-1,'ub',1) ,
-		 Polyhedron('lb',1,'ub',2) ];
+Hinv = [ PolyUnion(Polyhedron('lb',-2,'ub',-1)) , ...
+		 PolyUnion(Polyhedron('lb',-1,'ub',1)) , ...
+		 PolyUnion(Polyhedron('lb',1,'ub',2)) ];
 
 Y_labels{1} = 'A';
 Y_labels{2} = 'B';
 Y_labels{3} = 'C';
 
-st_oneD = SystemTuple(X,X0,DynList,num_y,H);
+st_oneD = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+
+use_script = false;
+use_function = true;
+
+max_iter = 2;
 
 disp('- Defined Constants')
+disp(['  + use_script = ' num2str(use_script) ] )
+disp(['  + use_function = ' num2str(use_function) ] )
+disp(['  + max_iter = ' num2str(max_iter) ])
+disp(' ')
 
-%%%%%%%%%%%%%%%
-%% Algorithm %%
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
+%% Algorithm 0 %%
+%%%%%%%%%%%%%%%%%
 
-%% Initialization
+if use_function
+	disp('Using the KAM Function to create external trace system.')
 
-Cover0 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
-ExpGamma0 = [];
+	fcn_start = tic;
+	ets_out_fcn = st_oneD.KAM( Hinv , 'MaximumIterations' , max_iter , 'Debug' , true )
+	function_time = toc(fcn_start);
 
-ExpX0 = [];
-for cover_elt_idx = 1:length(Cover0)
+	disp('- Completed KAM function.')
+	disp(['  + Elapsed time: ' num2str(function_time) ])
 
-	% temp_tuple.Hc = cover_elt_idx;
-	% temp_tuple.q = Cover0(cover_elt_idx);
-	% temp_tuple.c = temp_tuple.q;
-	temp_tuple = ExpXElement( cover_elt_idx , Cover0(cover_elt_idx) , Cover0(cover_elt_idx) );
-
-	%Add to ExpX0;
-	ExpX0 = [ExpX0,temp_tuple];
 end
 
-ExpF0 = [];
+if use_script
 
-%% Loop
+	disp('Using the script in one_dim_example to create external trace system.')
 
-loop_condition = (length(ExpX0) == 0);
-ExpX = ExpX0;
-ExpF = ExpF0;
-Cover = Cover0;
-ExpGamma = ExpGamma0;
+	script_start = tic;
 
-%while loop_condition
-ExpGamma_i = EXPX_to_EXP_Gamma( ExpX );
-maximal_subset_ExpX = get_expx_elts_with_maximal_cardv( ExpX );
-for maximal_elt_idx = 1:length(maximal_subset_ExpX)
-	temp_maximal_elt = maximal_subset_ExpX(maximal_elt_idx);
+	%%%%%%%%%%%%%%%%%
+	%% Algorithm 1 %%
+	%%%%%%%%%%%%%%%%%
 
-	for u = 1:num_U
-		for y = 1:num_y
-			v_prime = [ temp_maximal_elt.v , u , y ];
-			c_prime = intersect(st_oneD.F( temp_maximal_elt.c , u ), Hinv(y) );
-			Q_prime = get_minimal_covering_subsets_for( c_prime , Cover0 );
+	%% Initialization
 
-			for q_prime_idx = 1:length(Q_prime)
-				q_prime = Q_prime(q_prime_idx);
-				temp_expx_elt = ExpXElement( v_prime , c_prime , q_prime );
-				
-				%Update ExpX
-				ExpX = temp_expx_elt.union_with_set( ExpX );
+	Cover0 = [ PolyUnion(Polyhedron('lb',-2,'ub',-1)) , PolyUnion(Polyhedron('lb',-1,'ub',1)) , PolyUnion(Polyhedron('lb',1,'ub',2)) ];
+	ExpGamma0 = [];
 
-				%Update EXPF
-				temp_expf_elt = ExpFElement( temp_maximal_elt , u , temp_expx_elt );
-				ExpF = temp_expf_elt.union_with_set( ExpF );
+	ExpX0 = [];
+	for cover_elt_idx = 1:length(Cover0)
+
+		% temp_tuple.Hc = cover_elt_idx;
+		% temp_tuple.q = Cover0(cover_elt_idx);
+		% temp_tuple.c = temp_tuple.q;
+		temp_tuple = ExpXElement( cover_elt_idx , Cover0(cover_elt_idx) , Cover0(cover_elt_idx) );
+
+		%Add to ExpX0;
+		ExpX0 = [ExpX0,temp_tuple];
+	end
+
+	ExpF0 = [];
+
+	%% Loop
+
+	%loop_condition = (length(ExpX0) < 0);
+	ExpX = ExpX0;
+	ExpF = ExpF0;
+	Cover = Cover0;
+	ExpGamma = ExpGamma0;
+
+	max_iterations = max_iter;
+	curr_iter = 0;
+	loop_condition = true;
+
+	while loop_condition
+		ExpGamma_i = EXPX_to_EXP_Gamma( ExpX );
+		maximal_subset_ExpX = get_expx_elts_with_maximal_cardv( ExpX );
+		for maximal_elt_idx = 1:length(maximal_subset_ExpX)
+			temp_maximal_elt = maximal_subset_ExpX(maximal_elt_idx);
+
+			for u = 1:num_U
+				for y = 1:num_y
+					v_prime = [ temp_maximal_elt.v , u , y ];
+					c_prime = IntersectPolyUnion(st_oneD.F( temp_maximal_elt.c , u ), Hinv(y) );
+					Q_prime = get_minimal_covering_subsets_for( c_prime , Cover0 );
+
+					for q_prime_idx = 1:length(Q_prime)
+						q_prime = Q_prime(q_prime_idx);
+						temp_expx_elt = ExpXElement( v_prime , c_prime , q_prime );
+						
+						%Update ExpX
+						ExpX = temp_expx_elt.union_with_set( ExpX );
+
+						%Update EXPF
+						temp_expf_elt = ExpFElement( temp_maximal_elt , u , temp_expx_elt );
+						ExpF = temp_expf_elt.union_with_set( ExpF );
+					end
+
+				end
+			end
+
+			%possibly refine.
+			if temp_maximal_elt.c <= temp_maximal_elt.q
+				[ Cover , ExpF , ExpGamma , ExpX ] = temp_maximal_elt.refine( st_oneD , Cover , ExpF , ExpGamma , ExpX );
 			end
 
 		end
+
+		%Update loop condition.
+		curr_iter = curr_iter + 1;
+		loop_condition = (curr_iter < max_iterations);
+
 	end
 
-	%possibly refine.
-	if temp_maximal_elt.c <= temp_maximal_elt.q
-		[ Cover , ExpF , ExpGamma , ExpX ] = temp_maximal_elt.refine( st_oneD , Cover , ExpF , ExpGamma , ExpX )
-	end
+	ets_out = extract_ets( ExpX , ExpF , Hinv , st_oneD )
+
+	script_elapsed = toc(script_start);
+	disp('- Completed one_dim_example script.')
+	disp(['  + Elapsed time: ' num2str(script_elapsed) ])
+
 
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Extra Function Definitions %%

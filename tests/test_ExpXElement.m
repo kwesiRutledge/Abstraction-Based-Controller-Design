@@ -28,6 +28,45 @@ function test1_constructor(testCase)
 
 end
 
+function test1_eq(testCase)
+	%Description:
+	%	Tests a simple comparison of two equal ExpXElements.
+
+	%% Including Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+
+	%% Constants
+	Cover1 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
+
+	%% Algorithm 
+	temp_ExpXElement1 = ExpXElement( 1 , Cover1(1) , Cover1(2) );
+	temp_ExpXElement2 = ExpXElement( 1 , Cover1(1) , Cover1(2) );
+
+	assert( temp_ExpXElement1 == temp_ExpXElement2 )
+
+end
+
+function test2_eq(testCase)
+	%Description:
+	%	Tests the comparison of two ExpXElements with different length v
+	%	elements.
+
+	%% Including Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+
+	%% Constants
+	Cover1 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
+
+	%% Algorithm 
+	temp_ExpXElement1 = ExpXElement( 1 , Cover1(1) , Cover1(2) );
+	temp_ExpXElement2 = ExpXElement( [1,2,3] , Cover1(1) , Cover1(2) );
+
+	assert(temp_ExpXElement1 ~= temp_ExpXElement2)
+
+end
+
 function [ExpF1 , ExpX1 , num_U] = get_simple_ExpF1()
 	%Description:
 	%	Creates a dummy ExpF1 set.
@@ -201,7 +240,7 @@ function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system1()
 	Y_labels{2} = 'B';
 	Y_labels{3} = 'C';
 
-	st_out = SystemTuple(X,X0,DynList,num_y,H);
+	st_out = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
 
 	%% Create ExpFElement set
 
@@ -364,12 +403,13 @@ function test2_refine(testCase)
 	s = st_out.pre_input_dependent( post_Q );
 
 	s_subset_q = PolyUnion_subseteq(s,target_tuple.q);
+	s_strictsubset_q = PolyUnion_strictsubset(s,target_tuple.q);
 
 	%s should be [0,2], technically PolyUnion([Polyhedron('lb',0,'ub',2)])
 	%target_tuple.q should be [0,2], technically PolyUnion([Polyhedron('')])
 	%Therefore, s_subset_q should be TRUE
 	%And:
-	%	- cover2_prime == cover2 U s
+	%	- cover2_prime == cover2, %Because of a technicality. s is not a strict subset of q
 	%	- ExpF2_out == ExpF2
 	%	- ExpG2_out == ExpG2
 	%	- ExpX2_out == ExpX2
@@ -410,10 +450,60 @@ function test2_refine(testCase)
 	% disp(expg2_equals_expg2_out)
 	% disp(expx2_equals_expx2_prime)
 
-	assert( s_subset_q && ...
-			cover2_is_subset_of_cover2_prime && (length(cover2) == (length(cover2_prime) - 1)) && ...
-			(cover2_prime(end) == s ) && ...
+	assert( s_subset_q && (~s_strictsubset_q) && ...
+			cover2_is_subset_of_cover2_prime && (length(cover2) == length(cover2_prime)) && ...
 			expf2_equals_expf2_out && expg2_equals_expg2_out && expx2_equals_expx2_prime )
+
+end
+
+function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system2()
+	%Description:
+	%	Create a system with a PostQ_u that we can represent.
+	%	This one is meant specifically for test3_refine.
+
+	%% Create System
+
+	X = Polyhedron('lb',-2,'ub',2);
+	X0 = X;
+
+	num_U = 2; %There are only two inputs allowed
+	%F = @one_dim_example_transition;
+	DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+
+	num_y = 3; %There are only three outputs.
+	H = @one_dim_example_output;
+	Hinv = [ Polyhedron('lb',-2,'ub',-1) , ...
+			 Polyhedron('lb',-1,'ub',1) ,
+			 Polyhedron('lb',1,'ub',2) ];
+
+	Y_labels{1} = 'A';
+	Y_labels{2} = 'B';
+	Y_labels{3} = 'C';
+
+	st_out = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+
+	%% Create ExpFElement set
+
+	%Create expx_out
+	cover_out = [ 	PolyUnion( Polyhedron('lb',-2,'ub',-0.5) ) , ...
+					PolyUnion( Polyhedron('lb',-1.5,'ub',1.5) ) , ...
+					PolyUnion( Polyhedron('lb',1,'ub',3) ) , ...
+					%PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , ... %resultant "s" for refine( [ 1,cover1(1),cover1(1) ])
+					PolyUnion( Polyhedron('lb',-1,'ub',3) ) ];
+
+	expx1 = ExpXElement( 1 , cover_out(1) , cover_out(1) );
+	expx2 = ExpXElement( 1 , cover_out(2) , cover_out(2) );
+	expx3 = ExpXElement( 1 , cover_out(3) , cover_out(3) ); %Will not be changed.
+	expx4 = ExpXElement( 1 , cover_out(4) , cover_out(2) );
+
+	expx_out = [ expx1 , expx2 , expx3 , expx4 ];
+
+	% Create expf_out
+	expf1 = ExpFElement( expx4 , 1 , expx3 );
+	expf2 = ExpFElement( expx4 , 2 , expx2 );
+
+	expf_out = [ expf1 , expf2 ];
 
 end
 
@@ -421,15 +511,15 @@ function test3_refine(testCase)
 	%Description:
 	%	Tests the ability of the refine object to identify when:
 	%	- the s <= q condition is true 
-	%	- there are some elements where line 31 of algorithm is satisfied
-	%	- there are no transitions that satisfy line 34 of the algorithm 
+	%	- there are no elements where line 31 of algorithm is satisfied
+	%	- there are no transitions that satisfy line 34 of the algorithm
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
 	tf = check_for_pcis();
 
 	%% Constants
-	[st_out, ExpX3 , ExpF3 , num_U , cover3 ] = get_test_system1();
+	[st_out, ExpX3 , ExpF3 , num_U , cover3 ] = get_test_system2();
 	ExpG3 = [];
 	for expx_idx = 1:length(ExpX3)
 		temp_ExpXElement = ExpX3(expx_idx);
@@ -437,13 +527,112 @@ function test3_refine(testCase)
 		ExpG3 = [ ExpG3 , ExpGammaElement( temp_ExpXElement ) ];
 	end
 
-	target_tuple = ExpX3(7);
+	target_tuple = ExpX3(end);
 
 	%% Algorithm
 	[ cover3_prime , ExpF3_out , ExpG3_out , ExpX3_prime ] = ...
 		target_tuple.refine( st_out , cover3 , ExpF3 , ExpG3 , ExpX3 );
 
 	post_Q = target_tuple.get_PostQ_u( ExpF3 , st_out.nu() );
+
+	% post_Q
+
+	% for postq_idx = 1:length(post_Q)
+	% 	for set_idx = 1:post_Q{postq_idx}.Num 
+	% 		post_Q{postq_idx}.Set(set_idx)
+	% 	end
+	% end
+
+	s = st_out.pre_input_dependent( post_Q );
+
+	s_strictsubset_q = PolyUnion_strictsubset(s,target_tuple.q);
+
+	c_tilde = target_tuple.c;
+	c_strictsubset_s = PolyUnion_strictsubset(c_tilde,s);
+
+	%s should be [0,2], technically PolyUnion([Polyhedron('lb',0,'ub',2)])
+	%target_tuple.q should be [0,2], technically PolyUnion([Polyhedron('')])
+	%Therefore, s_subset_q and c_strictsubset_s should be TRUE
+	%And:
+	%	- cover3_prime == cover3 U s
+	%	- ExpF3_out == ExpF3
+	%	- ExpG3_out == ExpG3
+	%	- ExpX3_out == ExpX3
+
+	cover3_is_subset_of_cover3_prime = true;
+	for c3_idx = 1:length(cover3)
+		c3_elt = cover3(c3_idx);
+		c3p_elt = cover3_prime(c3_idx);
+
+		cover3_is_subset_of_cover3_prime = cover3_is_subset_of_cover3_prime && (c3_elt == c3p_elt);
+	end
+
+	expf3_equals_expf3_out = true;
+	for ef3_idx = 1:length(ExpF3)
+		expf_elt = ExpF3(ef3_idx);
+		expfo_elt = ExpF3_out(ef3_idx);
+
+		expf3_equals_expf3_out = expf3_equals_expf3_out && ( expf_elt == expfo_elt );
+	end
+
+	expg3_equals_expg3_out = true;
+	for eg3_idx = 1:length(ExpG3)
+		expg_elt = ExpG3(eg3_idx);
+		expgo_elt = ExpG3_out(eg3_idx);
+
+		expg3_equals_expg3_out = expg3_equals_expg3_out && ( expg_elt == expgo_elt );
+	end
+
+	expx3_equals_expx3_prime = true;
+	for ex3_idx = 1:length(ExpX3)
+		expx_elt = ExpX3(ex3_idx);
+		expxp_elt = ExpX3_prime(ex3_idx);
+
+		expx3_equals_expx3_prime = expx3_equals_expx3_prime && ( expx_elt == expxp_elt );
+	end
+
+	% disp(expf2_equals_expf2_out)
+	% disp(expg2_equals_expg2_out)
+	% disp(expx2_equals_expx2_prime)
+
+	% disp(cover3_is_subset_of_cover3_prime && (length(cover3) == (length(cover3_prime) - 1)))
+	% disp(cover3_is_subset_of_cover3_prime)
+	% disp(length(cover3) == (length(cover3_prime) - 1))
+
+	assert( s_strictsubset_q && (~c_strictsubset_s) && ...
+			cover3_is_subset_of_cover3_prime && (length(cover3) == (length(cover3_prime) - 1)) && ...
+			expf3_equals_expf3_out && expg3_equals_expg3_out && expx3_equals_expx3_prime )
+
+
+end
+
+function test4_refine(testCase)
+	%Description:
+	%	Tests the ability of the refine object to identify when:
+	%	- the s <= q condition is true 
+	%	- there are some elements where line 31 of algorithm is satisfied
+	%	- there are some transitions that satisfy line 34 of the algorithm 
+
+	%% Including Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+
+	%% Constants
+	[st_out, ExpX4 , ExpF4 , num_U , cover4 ] = get_test_system1();
+	ExpG4 = [];
+	for expx_idx = 1:length(ExpX4)
+		temp_ExpXElement = ExpX4(expx_idx);
+
+		ExpG4 = [ ExpG4 , ExpGammaElement( temp_ExpXElement ) ];
+	end
+
+	target_tuple = ExpX4(7);
+
+	%% Algorithm
+	[ cover4_prime , ExpF4_out , ExpG4_out , ExpX4_prime ] = ...
+		target_tuple.refine( st_out , cover4 , ExpF4 , ExpG4 , ExpX4 );
+
+	post_Q = target_tuple.get_PostQ_u( ExpF4 , st_out.nu() );
 
 	% post_Q
 
@@ -467,12 +656,12 @@ function test3_refine(testCase)
 	%	- ExpG1_out == ExpG1
 	%	- ExpX1_out == ExpX1
 
-	cover3_is_subset_of_cover3_prime = true;
-	for c3_idx = 1:length(cover3)
-		c3_elt = cover3(c3_idx);
-		c3p_elt = cover3_prime(c3_idx);
+	cover4_is_subset_of_cover4_prime = true;
+	for c4_idx = 1:length(cover4)
+		c4_elt = cover4(c4_idx);
+		c4p_elt = cover4_prime(c4_idx);
 
-		cover3_is_subset_of_cover3_prime = cover3_is_subset_of_cover3_prime && (c3_elt == c3p_elt);
+		cover4_is_subset_of_cover4_prime = cover4_is_subset_of_cover4_prime && (c4_elt == c4p_elt);
 	end
 
 	% expf2_equals_expf2_out = true;
@@ -498,17 +687,17 @@ function test3_refine(testCase)
 
 	% 	expx1_equals_expx1_prime = expx1_equals_expx1_prime && ( expx_elt == expxp_elt );
 	% end
-	disp( ExpG3_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover3(3) )) )
-	disp( ExpG3_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover3(6) )) )
+	disp( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) )
+	disp( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) )
 
 	assert( s_subset_q && ...
-			cover3_is_subset_of_cover3_prime && (length(cover3) == (length(cover3_prime) - 1)) && ...
-			(cover3_prime(end) == s ) && ...
-			( ExpX3_prime(6) ~= ExpXElement( 1 , s , cover3(3) )) && ... %This entry should not be changed in X3
-			( ExpX3_prime(7) == ExpXElement( 1 , s , cover3(6) )) && ...
-			( ExpF3_out(7).ExpXElt == ExpXElement( 1 , s , cover3(6) )) && ...
-			( ExpF3_out(8).ExpXElt == ExpXElement( 1 , s , cover3(6) )) && ...
-			( ExpG3_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover3(3) )) ) && ...
-			( ExpG3_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover3(6) )) ) )
+			cover4_is_subset_of_cover4_prime && (length(cover4) == (length(cover4_prime) - 1)) && ...
+			(cover4_prime(end) == s ) && ...
+			( ExpX4_prime(6) ~= ExpXElement( 1 , s , cover4(3) )) && ... %This entry should not be changed in X3
+			( ExpX4_prime(7) == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpF4_out(7).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpF4_out(8).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) ) && ...
+			( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) ) )
 
 end

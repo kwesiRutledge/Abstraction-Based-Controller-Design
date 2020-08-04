@@ -2,14 +2,39 @@ classdef SystemTuple
 	%Description:
 	%	This object is meant to be a container for the 'System' object defined in
 	%	'On Abstraction-Based Controller Design With Output Feedback'
+	%
+	%Properties
+	%	X
+	%	X0
+	%	DynList
+	%	numY
+	%	H
+	%	YLabels
+	%
+	%Methods
+	%	SystemTuple
+	%	nu
+	%	pre
+	%	pre_input_dependent
+	%	F
 
 	properties
 		X;
 		X0;
-		DynList;
 		numY;
 		H;
 		YLabels;
+		%Define Continuous Linear Dynamics, if specified.
+		DynList;
+		%Define Discrete Transitions in a sparse way, if specified.
+		x0;
+		u0;
+		x1;
+	end
+
+	properties(SetAccess=protected)
+		hasDiscreteDynamics = false;
+		hasLinearDynamics = false;
 	end
 
 	methods
@@ -17,9 +42,10 @@ classdef SystemTuple
 			%Description:
 			%
 			%Usage:
-			%	S = SystemTuple(X,X0,DynList,numY,H)
-			%	S = SystemTuple(X,X0,DynList,numY,H,'Don''t Check Inputs')
-			%	S = SystemTuple(X,X0,DynList,numY,H,'YLabels',labels_cell_arr)
+			%	S = SystemTuple(X,X0,numY,H)
+			%	S = SystemTuple(X,X0,numY,H,'Don''t Check Inputs')
+			%	S = SystemTuple(X,X0,numY,H,'YLabels',labels_cell_arr)
+			%	S = SystemTuple(X,X0,numY,H,{'DiscreteDynamics'},x,u,x_prime)
 
 			%% Input Processing
 
@@ -29,35 +55,50 @@ classdef SystemTuple
 
 			X = varargin{1};
 			X0 = varargin{2};
-			DynList = varargin{3};
-			numY = varargin{4};
-			H = varargin{5};
+			numY = varargin{3};
+			H = varargin{4};
 
-			arg_idx = 6;
+			arg_idx = 5;
 			while arg_idx <= nargin
 				switch varargin{arg_idx}
 					case 'Don''t Check Inputs'
-						st.X = X;
-						st.X0 = X0;
-						st.numU = numU;
-						st.F = F;
-						st.numY = numY;
-						st.H = H;
-						return
+						PerformInputChecking = false;
+						arg_idx = arg_idx + 1;
 					case 'YLabels'
 						ylabels_cell_arr = varargin{arg_idx+1};
 						arg_idx = arg_idx + 2;
+					case 'LinearDynamics'
+						DynList = varargin{arg_idx+1};
+						st.hasLinearDynamics = true;
+						arg_idx = arg_idx + 2;
+					case {'DiscreteDynamics','DiscreteTransitions'}
+						x0 = varargin{arg_idx+1};
+						u0 = varargin{arg_idx+2};
+						x1 = varargin{arg_idx+3};
+						st.hasDiscreteDynamics = true;
+						arg_idx = arg_idx + 4;
 					otherwise
 						error(['Unexpected input to the SystemTuple constructor: ' varargin{arg_idx} '!'])
 				end
 			end
 
-			if ~(X0 <= X)
-				error('Initial state set X0 is not a subset of X!')
+			if ~exist('PerformInputChecking')
+				PerformInputChecking = true;
 			end
 
-			if ~isa(DynList,'Dyn')
-				error('The input DynList must be a list of Dyn() objects.')
+
+			if PerformInputChecking
+
+				if ~st.X0_is_subset_of_X( X0 , X )
+					error('Initial state set X0 is not a subset of X!')
+				end
+
+				if st.hasLinearDynamics
+					if ~isa(DynList,'Dyn')
+						error('The input DynList must be a list of Dyn() objects.')
+					end
+				end
+
 			end
 
 			%% Constants
@@ -66,7 +107,6 @@ classdef SystemTuple
 
 			st.X = X;
 			st.X0 = X0;
-			st.DynList = DynList;
 			st.numY = numY;
 			st.H = H;
 
@@ -75,6 +115,68 @@ classdef SystemTuple
 			else
 				st.YLabels = {};
 			end
+
+			if st.hasLinearDynamics
+				st.DynList = DynList;
+			end
+
+			if st.hasDiscreteDynamics
+				st.x0 = x0;
+				st.u0 = u0;
+				st.x1 = x1;
+			end
+
+		end
+
+		function tf = X0_is_subset_of_X(obj, X0_candidate , X )
+			%Description:
+			%	Determines if the set X0 is a subset of the set X.
+			%	Sets may be defined as lists of numbers, or PolyUnion objects or Polyhedron object.
+
+			%% Input Processing
+			class_x0 = class(X0_candidate);
+			class_x = class(X);
+
+			if ~strcmp(class_x,class_x0)
+				error(['The two sets are not of the same class! X0 is a ' class_x0 ' object while X is a ' class_x ' object.' ])
+			end
+
+			%% Algorithm
+
+			switch class_x
+				case {'Polyhedron','PolyUnion'}
+					if (length(X0_candidate) == 1) && (length(X) == 1)
+						tf = X0_candidate <= X;
+					else
+						%If X0_candidate and X are arrays, then make sure
+						%that each element of X0_candidate is an element
+						%of X.
+						tf = true;
+						for X0_idx = 1:length(X0_candidate)
+							X0_elt = X0_candidate(X0_idx);
+
+							X0_elt_in_X = false;
+							%Search for a match in X
+							for X_idx = 1:length(X)
+								X0_elt_in_X = X0_elt_in_X || ( X0_elt <= X(X_idx) );
+							end
+							tf = X0_elt_in_X & tf;
+
+							%If you find that one element of X0 is not in X
+							%then break out of this function and return false.
+							if ~tf
+								return;
+							end
+
+						end
+					end
+					1;
+				case 'double'
+					tf = isempty( setdiff(X0_candidate , X) );
+				otherwise
+					error(['Unexpected class of sets: ' class_x ])
+			end
+
 
 		end
 
@@ -172,6 +274,7 @@ classdef SystemTuple
 					X_pre = X_pre.intersect( X_pre_u( u_idx ) );
 				elseif isa(X_pre,'PolyUnion')
 					X_pre = IntersectPolyUnion( X_pre , X_pre_u( u_idx ) );
+					X_pre.reduce();
 				else
 					error(['Unexpected class of X_pre: ' class(X_pre)])
 				end
@@ -199,10 +302,41 @@ classdef SystemTuple
 				error('This function does not currently support dynamics with : ''Ap'',''Ad'',''Ev'',''Ew'' ')
 			end
 
+			x_class = class(x);
+
 			%% Algorithm
-
-			X_next = dyn_u.A * x + dyn_u.F;
-
+			switch x_class
+				case 'Polyhedron'
+					X_next = dyn_u.A * x + dyn_u.F;
+				case 'PolyUnion'
+					output_sets = [];
+					for set_idx = 1:x.Num
+						set_i = x.Set(set_idx);
+						F_out = obj.F( set_i , u );
+						output_sets = [ output_sets , F_out.Set ];
+					end
+					X_next = PolyUnion(output_sets);
+					X_next.reduce();
+				otherwise
+					error(['x is of an unexpected type:' x_class])
+            end
+            
+            %Now, intersect output with the domain
+            domain_class = class(obj.X);
+            if strcmp(domain_class,'Polyhedron') && strcmp(x_class,'Polyhedron')
+            	X_next = X_next.intersect( obj.X ); %Make sure that the result is contained in the domain.
+            elseif strcmp(domain_class,'PolyUnion' ) && strcmp(x_class,'Polyhedron')
+            	temp_Xnext = PolyUnion( X_next );
+            	clear X_next
+            	X_next = IntersectPolyUnion( temp_Xnext , obj.X );
+            elseif strcmp(domain_class,'Polyhedron' ) && strcmp(x_class,'PolyUnion')
+                temp_X = PolyUnion(obj.X);
+                X_next = IntersectPolyUnion( temp_X , X_next );
+            elseif strcmp(domain_class,'PolyUnion') && strcmp(x_class,'PolyUnion')
+            	X_next = IntersectPolyUnion( obj.X , X_next );
+			else
+				error(['The combination of domain with class ' class(obj.X) ' and X_next of class ' class(X_next) ' is not recognized.' ])
+			end
 		end
 
 	end

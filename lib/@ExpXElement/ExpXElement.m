@@ -44,6 +44,14 @@ classdef ExpXElement
 
 			%% Algorithm
 
+			if length(obj.v) ~= length(comparison_elt.v)
+				%If the external behaviors observed are of different lengths,
+				%then these two behaviors/ExpXElements are at
+				%different times and cannot be equal.
+				tf = false;
+				return;
+			end	
+
 			tf = all(obj.v == comparison_elt.v) && ...
 				(obj.q == comparison_elt.q) && ...
 				(obj.c == comparison_elt.c);
@@ -214,7 +222,9 @@ classdef ExpXElement
 			% disp(class(s))
 			% disp(class(obj.q))
 
-			if PolyUnion_subseteq( s , obj.q )
+			if PolyUnion_strictsubset( s , obj.q )
+				%If s is a proper subset of q
+
 				%Update the cover
 				Cover_out = [Cover_out,s];
 
@@ -227,11 +237,11 @@ classdef ExpXElement
 						continue;
 					end
 
-					disp(['expx_idx = ' num2str(expx_idx)])
+					% disp(['expx_idx = ' num2str(expx_idx)])
 
 					%For the expx_elt's whose q value matches obj.q,
 					%check the c value.
-					if PolyUnion_subseteq( expx_elt.c , s )
+					if PolyUnion_strictsubset( expx_elt.c , s )
 						EXP_Gamma_out = change_tuples_in_list( EXP_Gamma_out , expx_elt , s );
 						EXP_F_out = change_tuples_in_list( EXP_F_out , expx_elt , s );
 						EXP_X_out = change_tuples_in_list( EXP_X_out , expx_elt , s );
@@ -240,12 +250,12 @@ classdef ExpXElement
 				end
 
 				%Iterate through all elements of EXP_F
-				for expf_idx = 1:length(EXP_F_in)
-					expf_elt = EXP_F_in(expf_idx);
+				for expf_idx = 1:length(EXP_F_out)
+					expf_elt = EXP_F_out(expf_idx);
 
 					source_expx = expf_elt.ExpXElt;
 
-					if ( expf_elt.ExpXEltPrime.q == s ) && (source_expx.c <= source_expx.q)
+					if ( expf_elt.ExpXEltPrime.q == s ) && PolyUnion_strictsubset(source_expx.c , source_expx.q)
 						[ Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out ] = source_expx.refine( ...
 							System_in , Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out );
 					end
