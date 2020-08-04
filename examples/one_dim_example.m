@@ -62,7 +62,7 @@ if use_function
 	disp('Using the KAM Function to create external trace system.')
 
 	fcn_start = tic;
-	ets_out_fcn = st_oneD.KAM( Hinv , 'MaximumIterations' , max_iter , 'Debug' , true )
+	ets_out_fcn = st_oneD.KAM( Hinv , 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
 	function_time = toc(fcn_start);
 
 	disp('- Completed KAM function.')
