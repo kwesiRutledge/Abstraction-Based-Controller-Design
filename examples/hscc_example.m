@@ -30,7 +30,6 @@ DynList = [ Dyn(eye(dom.Dim),ones(dom.Dim,1)*(1/3),	zeros(dom.Dim,1),dom*Polyhed
 			Dyn(eye(dom.Dim),[(1/3);0],				zeros(dom.Dim,1),dom*Polyhedron('lb',0,'ub',0)), ...
 			Dyn(eye(dom.Dim),[0;(1/3)],				zeros(dom.Dim,1),dom*Polyhedron('lb',0,'ub',0)) ];
 
-num_y = 3; %There are only three outputs.
 H = @one_dim_example_output;
 Hinv = [ PolyUnion(Polyhedron('lb',[0,0],'ub',[1,1])) , ...
 		 PolyUnion(Polyhedron('lb',[1,0],'ub',[2,1])) , ...
@@ -52,10 +51,9 @@ Y_labels{7} = 'G';
 Y_labels{8} = 'H';
 Y_labels{9} = 'I';
 
-st_hscc = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+num_y = length(Y_labels);
 
-use_script = false;
-use_function = true;
+st_hscc = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList,'YLabels',Y_labels);
 
 max_iter = 2;
 
