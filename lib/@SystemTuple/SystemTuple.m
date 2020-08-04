@@ -126,6 +126,12 @@ classdef SystemTuple
 				st.x1 = x1;
 			end
 
+			%% Warnings
+
+			if isa(X,'PolyUnion')
+				warning('The SystemTuple object was designed to have a Polyhedron as the domain. Results may vary in quality with PolyUnion input.')
+			end
+
 		end
 
 		function tf = X0_is_subset_of_X(obj, X0_candidate , X )
@@ -307,13 +313,13 @@ classdef SystemTuple
 			%% Algorithm
 			switch x_class
 				case 'Polyhedron'
-					X_next = dyn_u.A * x + dyn_u.F;
+					X_next = obj.F_polyhedron( x , u );
+					return
 				case 'PolyUnion'
 					output_sets = [];
 					for set_idx = 1:x.Num
 						set_i = x.Set(set_idx);
-						F_out = obj.F( set_i , u );
-						output_sets = [ output_sets , F_out.Set ];
+						output_sets = [ output_sets , obj.F( set_i , u ) ];
 					end
 					X_next = PolyUnion(output_sets);
 					X_next.reduce();
@@ -337,6 +343,45 @@ classdef SystemTuple
 			else
 				error(['The combination of domain with class ' class(obj.X) ' and X_next of class ' class(X_next) ' is not recognized.' ])
 			end
+		end
+
+		function X_next = F_polyhedron( obj , x , u )
+			%Description:
+			%	The transition function for the SystemTuple, when:
+			%	- the system has linear dynamics and
+			%	- x is a polyhedron.
+			%	Returns a polyhedron or array of polyhedra.
+
+			%% Input Processing
+
+			%Assume that this was already done.
+
+			%% Constants
+
+			x_class = 'Polyhedron';
+			dyn_u = obj.DynList(u);
+
+			%% Algorithm
+
+			X_next = dyn_u.A * x + dyn_u.F;
+
+			%Intersect with the domain.
+			domain_class = class(obj.X);
+			switch domain_class
+				case 'Polyhedron'
+					X_next = X_next.intersect( obj.X );
+				case 'PolyUnion'
+					temp_X = PolyUnion(obj.X);
+                	temp_Xnext = IntersectPolyUnion( temp_X , X_next );
+                	X_next = temp_Xnext.Set;
+				otherwise
+					error(['Unexpected type for domain: ' domain_class ])
+			end
+	
+
+				
+
+
 		end
 
 	end

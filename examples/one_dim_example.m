@@ -22,7 +22,8 @@ end
 
 dom = Polyhedron('lb',-2,'ub',2);
 
-X = PolyUnion(dom);
+% X = PolyUnion(dom);
+X = dom;
 X0 = X;
 
 num_U = 2; %There are only two inputs allowed
@@ -45,7 +46,7 @@ st_oneD = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
 use_script = false;
 use_function = true;
 
-max_iter = 2;
+max_iter = 3;
 
 disp('- Defined Constants')
 disp(['  + use_script = ' num2str(use_script) ] )
