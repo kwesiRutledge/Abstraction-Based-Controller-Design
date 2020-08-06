@@ -19,11 +19,10 @@ function [S_hat] = KAM( varargin )
 	%% Input Processing %%
 
 	st = varargin{1};
-	Hinv = varargin{2};
 
-	if isa(st.X,'Polyhedron') && isa(st.X0,'Polyhedron') && isa(Hinv(1),'Polyhedron')
+	if isa(st.X,'Polyhedron') && isa(st.X0,'Polyhedron') && isa(st.HInverse(1),'Polyhedron')
 		S_hat = KAM_Polyhedron( varargin{:} );
-	elseif isa(Hinv(1),'PolyUnion')
+	elseif isa(st.HInverse(1),'PolyUnion')
 		S_hat = KAM_PolyUnion( varargin{:} );
 	else
 		error('Expected Hinv(1) to be a Polyhedron or PolyUnion object. When in doubt, choose PolyUnion.')
@@ -54,9 +53,8 @@ function [S_hat] = KAM_PolyUnion( varargin )
 	%% Input Processing %%
 
 	st = varargin{1};
-	Hinv = varargin{2};
 
-	argidx = 3;
+	argidx = 2;
 	while argidx <= nargin
 		switch varargin{argidx}
 			case 'MaximumIterations'
@@ -73,7 +71,7 @@ function [S_hat] = KAM_PolyUnion( varargin )
 		end
 	end
 
-	if ~isa(Hinv(1),'PolyUnion')
+	if ~isa(st.HInverse(1),'PolyUnion')
 		error(['This function is currently designed to support Hinv which are an array of PolyUnion objects. Received an array of ' class(Hinv) 'objects.'])
 	end
 
@@ -89,7 +87,7 @@ function [S_hat] = KAM_PolyUnion( varargin )
 	%% Initialization %%
 	%%%%%%%%%%%%%%%%%%%%
 
-	Cover0 = Hinv;
+	Cover0 = st.HInverse;
 	ExpGamma0 = [];
 
 	ExpX0 = [];
@@ -132,9 +130,9 @@ function [S_hat] = KAM_PolyUnion( varargin )
 			temp_maximal_elt = maximal_subset_ExpX(maximal_elt_idx);
 
 			for u = 1:st.nu()
-				for y = 1:st.numY
+				for y = 1:st.ny()
 					v_prime = [ temp_maximal_elt.v , u , y ];
-					c_prime = IntersectPolyUnion(st.F( temp_maximal_elt.c , u ), Hinv(y) );
+					c_prime = IntersectPolyUnion(st.F( temp_maximal_elt.c , u ), st.HInverse(y) );
 					Q_prime = get_minimal_covering_subsets_for( c_prime , Cover );
 
 					for q_prime_idx = 1:length(Q_prime)
@@ -184,7 +182,7 @@ function [S_hat] = KAM_PolyUnion( varargin )
 
 	end
 
-	S_hat = extract_ets( ExpX , ExpF , Hinv , st );
+	S_hat = extract_ets( ExpX , ExpF , st );
 
 
 end 
@@ -210,9 +208,8 @@ function [S_hat] = KAM_Polyhedron( varargin )
 	%% Input Processing %%
 
 	st = varargin{1};
-	Hinv = varargin{2};
 
-	argidx = 3;
+	argidx = 2;
 	while argidx <= nargin
 		switch varargin{argidx}
 			case 'MaximumIterations'
@@ -248,7 +245,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 	%% Initialization %%
 	%%%%%%%%%%%%%%%%%%%%
 
-	Cover0 = Hinv;
+	Cover0 = st.HInverse;
 	ExpGamma0 = [];
 
 	ExpX0 = [];
@@ -292,7 +289,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 				for y = 1:st.numY
 					v_prime = [ temp_maximal_elt.v , u , y ];
 					c_prime = st.F( temp_maximal_elt.c , u );
-					c_prime = c_prime.intersect( Hinv(y) );
+					c_prime = c_prime.intersect( st.HInverse(y) );
 					Q_prime = get_minimal_covering_subsets_for( c_prime , Cover );
 
 					for q_prime_idx = 1:length(Q_prime)
@@ -341,7 +338,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 
 	end
 
-	S_hat = extract_ets( ExpX , ExpF , Hinv , st );
+	S_hat = st.extract_ets( ExpX , ExpF );
 
 
 end 

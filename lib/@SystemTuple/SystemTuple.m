@@ -7,22 +7,23 @@ classdef SystemTuple
 	%	X
 	%	X0
 	%	DynList
-	%	numY
 	%	H
 	%	YLabels
 	%
 	%Methods
 	%	SystemTuple
 	%	nu
+	%	ny
 	%	pre
 	%	pre_input_dependent
 	%	F
+	%	H
+	%	KAM
 
 	properties
 		X;
 		X0;
-		numY;
-		H;
+		HInverse;
 		YLabels;
 		%Define Continuous Linear Dynamics, if specified.
 		DynList;
@@ -42,10 +43,10 @@ classdef SystemTuple
 			%Description:
 			%
 			%Usage:
-			%	S = SystemTuple(X,X0,numY,H)
-			%	S = SystemTuple(X,X0,numY,H,'Don''t Check Inputs')
-			%	S = SystemTuple(X,X0,numY,H,'YLabels',labels_cell_arr)
-			%	S = SystemTuple(X,X0,numY,H,{'DiscreteDynamics'},x,u,x_prime)
+			%	S = SystemTuple(X,X0,HInverse)
+			%	S = SystemTuple(X,X0,HInverse,'Don''t Check Inputs')
+			%	S = SystemTuple(X,X0,HInverse,'YLabels',labels_cell_arr)
+			%	S = SystemTuple(X,X0,HInverse,'DiscreteDynamics',x,u,x_prime)
 
 			%% Input Processing
 
@@ -55,10 +56,9 @@ classdef SystemTuple
 
 			X = varargin{1};
 			X0 = varargin{2};
-			numY = varargin{3};
-			H = varargin{4};
+			HInverse = varargin{3};
 
-			arg_idx = 5;
+			arg_idx = 4;
 			while arg_idx <= nargin
 				switch varargin{arg_idx}
 					case 'Don''t Check Inputs'
@@ -107,8 +107,7 @@ classdef SystemTuple
 
 			st.X = X;
 			st.X0 = X0;
-			st.numY = numY;
-			st.H = H;
+			st.HInverse = HInverse;
 
 			if exist('ylabels_cell_arr')
 				st.YLabels = ylabels_cell_arr;
@@ -377,11 +376,18 @@ classdef SystemTuple
 				otherwise
 					error(['Unexpected type for domain: ' domain_class ])
 			end
-	
 
-				
+		end
 
+		function numY = ny(obj)
+			%Description:
+			%	Returns the number of outputs for the system.
+			%	This is implicitly written in the size of the Hinverse field.
+			%
+			%Usage:
+			%	numY = obj.ny()
 
+			numY = length(obj.HInverse);
 		end
 
 	end

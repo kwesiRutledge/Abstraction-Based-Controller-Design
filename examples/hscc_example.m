@@ -1,8 +1,9 @@
-%one_dim_example.m
+%hscc_example.m
 %Description:
 %
 
-disp('one_dim_example.m')
+disp('hscc_example.m')
+disp(' ')
 
 %% Setup 
 
@@ -53,14 +54,14 @@ Y_labels{9} = 'I';
 
 num_y = length(Y_labels);
 
-st_hscc = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList,'YLabels',Y_labels);
+st_hscc = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList,'YLabels',Y_labels);
 
-max_iter = 2;
+max_iter = 1;
 
-disp('- Defined Constants')
-disp(['  + use_script = ' num2str(use_script) ] )
-disp(['  + use_function = ' num2str(use_function) ] )
-disp(['  + max_iter = ' num2str(max_iter) ])
+disp('Defined Constants')
+disp(['- max_iter = ' num2str(max_iter) ])
+disp(['- length(Hinv) = ' num2str(length(Hinv)) ])
+disp(['- length(DynList) = ' num2str(length(DynList)) ])
 disp(' ')
 
 %%%%%%%%%%%%%%%%%
@@ -70,7 +71,7 @@ disp(' ')
 disp('Using the KAM Function to create external trace system.')
 
 fcn_start = tic;
-ets_out_fcn = st_hscc.KAM( Hinv , 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
+ets_out_fcn = st_hscc.KAM( 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
 function_time = toc(fcn_start);
 
 disp('- Completed KAM function.')

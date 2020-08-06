@@ -41,7 +41,7 @@ Y_labels{1} = 'A';
 Y_labels{2} = 'B';
 Y_labels{3} = 'C';
 
-st_oneD = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+st_oneD = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList);
 
 use_script = false;
 use_function = true;
@@ -62,7 +62,7 @@ if use_function
 	disp('Using the KAM Function to create external trace system.')
 
 	fcn_start = tic;
-	ets_out_fcn = st_oneD.KAM( Hinv , 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
+	ets_out_fcn = st_oneD.KAM( 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
 	function_time = toc(fcn_start);
 
 	disp('- Completed KAM function.')

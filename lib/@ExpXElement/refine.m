@@ -120,7 +120,8 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 	post_Q = obj.get_PostQ_u( EXP_F_in , System_in.nu() );
 
 	s = System_in.pre_input_dependent( post_Q );
-	
+	s = IntersectPolyUnion( s , obj.q );
+		
 	%disp(class(s))
 
 	%Check if s <= q
