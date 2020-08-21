@@ -72,7 +72,7 @@ function test1_twoIteration(testCase)
 	%	Checking what happens after one iteration of the KAM algorithm.
 	%	Hoping that Cover is updated.
 
-	error('Kwesi. You should understand this test more before finalizing the test.')
+	error('Kwesi. You should understand this test more before finalizing it.')
 
 	%% Include Libraries
 	addpath(genpath('../lib/'))

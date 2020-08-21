@@ -18,7 +18,7 @@ function [tf] = check_for_gurobi()
     
     %% Search For the MATLAB Directory
     if strcmp(getenv('USER'),'kwesirutledge')
-        addpath(genpath('/Library/gurobi811/mac64/matlab/'))
+        addpath(genpath('/Library/gurobi903/mac64/matlab/'))
     end
     
     %% Check again for arcs and return a final answer

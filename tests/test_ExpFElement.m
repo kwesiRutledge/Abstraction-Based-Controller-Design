@@ -36,7 +36,10 @@ function test1_construction(testCase)
 
 	%% Include Libraries 
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
+	if ~tf
+		error('pcis was not correctly added!')
+	end
 
 	%% Constants
 	three_expxs = give_me_three_expx_please();
@@ -58,7 +61,7 @@ function test1_equal(testCase)
 
 	%% Include Libraries 
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	three_expxs = give_me_three_expx_please();
@@ -79,7 +82,7 @@ function test1_find(testCase)
 
 	%% Include Libraries 
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	three_expxs = give_me_three_expx_please();

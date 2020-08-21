@@ -14,7 +14,7 @@ function test1_constructor(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	Cover1 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
@@ -34,7 +34,7 @@ function test1_eq(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	Cover1 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
@@ -54,7 +54,7 @@ function test2_eq(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	Cover1 = [ Polyhedron('lb',-2,'ub',-1) , Polyhedron('lb',-1,'ub',1) , Polyhedron('lb',1,'ub',2) ];
@@ -106,7 +106,7 @@ function test1_get_PostQ_u(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 
@@ -133,7 +133,7 @@ function test2_get_PostQ_u(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 
@@ -197,7 +197,7 @@ function test3_get_PostQ_u(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 
@@ -240,7 +240,7 @@ function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system1()
 	Y_labels{2} = 'B';
 	Y_labels{3} = 'C';
 
-	st_out = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+	st_out = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList);
 
 	%% Create ExpFElement set
 
@@ -287,7 +287,7 @@ function test1_refine(testCase)
 
 	%% Including Libraries
 	addpath(genpath('../lib/'))
-	tf = check_for_pcis();
+	tf = (check_for_pcis()) && (check_for_gurobi()) ;
 
 	%% Constants
 	[st_out, ExpX1 , ExpF1 , num_U , cover1 ] = get_test_system1();
@@ -481,7 +481,7 @@ function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system2()
 	Y_labels{2} = 'B';
 	Y_labels{3} = 'C';
 
-	st_out = SystemTuple(X,X0,num_y,H,'LinearDynamics',DynList);
+	st_out = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList);
 
 	%% Create ExpFElement set
 
@@ -687,8 +687,158 @@ function test4_refine(testCase)
 
 	% 	expx1_equals_expx1_prime = expx1_equals_expx1_prime && ( expx_elt == expxp_elt );
 	% end
-	disp( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) )
-	disp( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) )
+	% disp( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) )
+	% disp( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) )
+
+	assert( s_subset_q && ...
+			cover4_is_subset_of_cover4_prime && (length(cover4) == (length(cover4_prime) - 1)) && ...
+			(cover4_prime(end) == s ) && ...
+			( ExpX4_prime(6) ~= ExpXElement( 1 , s , cover4(3) )) && ... %This entry should not be changed in X3
+			( ExpX4_prime(7) == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpF4_out(7).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpF4_out(8).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
+			( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) ) && ...
+			( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) ) )
+
+end
+
+function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system3()
+	%Description:
+	%	Create a system with a predictable value for PostQ_u.
+	%	This system configuration is different in that:
+	%		- Cover is an array of Polyhedron objects
+	%
+	%	This one is meant specifically for test3_refine.
+
+	%% Create System
+
+	X = Polyhedron('lb',-2,'ub',2);
+	X0 = X;
+
+	num_U = 2; %There are only two inputs allowed
+	%F = @one_dim_example_transition;
+	DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+
+	num_y = 3; %There are only three outputs.
+	H = @one_dim_example_output;
+	Hinv = [ Polyhedron('lb',-2,'ub',-1) , ...
+			 Polyhedron('lb',-1,'ub',1) ,
+			 Polyhedron('lb',1,'ub',2) ];
+
+	Y_labels{1} = 'A';
+	Y_labels{2} = 'B';
+	Y_labels{3} = 'C';
+
+	st_out = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList);
+
+	%% Create ExpFElement set
+
+	%Create expx_out
+	cover_out = [ 	Polyhedron('lb',-2,'ub',-0.5) , ...
+					Polyhedron('lb',-1.5,'ub',1.5) , ...
+					Polyhedron('lb',1,'ub',3) , ...
+					%PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , ... %resultant "s" for refine( [ 1,cover1(1),cover1(1) ])
+					Polyhedron('lb',-1,'ub',3) ];
+
+	expx1 = ExpXElement( 1 , cover_out(1) , cover_out(1) );
+	expx2 = ExpXElement( 1 , cover_out(2) , cover_out(2) );
+	expx3 = ExpXElement( 1 , cover_out(3) , cover_out(3) ); %Will not be changed.
+	expx4 = ExpXElement( 1 , cover_out(4) , cover_out(2) );
+
+	expx_out = [ expx1 , expx2 , expx3 , expx4 ];
+
+	% Create expf_out
+	expf1 = ExpFElement( expx4 , 1 , expx3 );
+	expf2 = ExpFElement( expx4 , 2 , expx2 );
+
+	expf_out = [ expf1 , expf2 ];
+
+end
+
+function test5_refine(testCase)
+	%Description:
+	%	Tests the ability of the refine object to identify when:
+	%	- the s <= q condition is true 
+	%	- there are some elements where line 31 of algorithm is satisfied
+	%	- there are some transitions that satisfy line 34 of the algorithm 
+
+	%% Including Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+
+	%% Constants
+	[st_out, ExpX5 , ExpF5 , num_U , cover5 ] = get_test_system1();
+	ExpG5 = [];
+	for expx_idx = 1:length(ExpX5)
+		temp_ExpXElement = ExpX5(expx_idx);
+
+		ExpG5 = [ ExpG5 , ExpGammaElement( temp_ExpXElement ) ];
+	end
+
+	target_tuple = ExpX5(7);
+
+	%% Algorithm
+	[ cover5_prime , ExpF5_out , ExpG5_out , ExpX5_prime ] = ...
+		target_tuple.refine( st_out , cover5 , ExpF5 , ExpG5 , ExpX5 );
+
+	post_Q = target_tuple.get_PostQ_u( ExpF5 , st_out.nu() );
+
+	% post_Q
+
+	% for postq_idx = 1:length(post_Q)
+	% 	for set_idx = 1:post_Q{postq_idx}.Num 
+	% 		post_Q{postq_idx}.Set(set_idx)
+	% 	end
+	% end
+
+	s = st_out.pre_input_dependent( post_Q )
+
+	s_subset_q = PolyUnion_subseteq(s,target_tuple.q);
+
+	%s should be [0,2], technically PolyUnion([Polyhedron('lb',0,'ub',2)])
+	%target_tuple.q should be [0,2], technically PolyUnion([Polyhedron('')])
+	%Therefore, s_subset_q should be TRUE
+	%And:
+	%	- cover5_prime == cover5 U s
+	%	- ExpX5(2) == ExpXElement( 1 , PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , cover_out(2) );
+	%	- ExpX5(6) == ExpXElement( 1 , PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , cover_out(3) );
+	%	- ExpG5_out == ExpG5
+	%	- ExpX5_out == ExpX5
+
+	cover5_is_subset_of_cover5_prime = true;
+	for c5_idx = 1:length(cover5)
+		c5_elt = cover5(c5_idx);
+		c5p_elt = cover5_prime(c5_idx);
+
+		cover5_is_subset_of_cover5_prime = cover5_is_subset_of_cover5_prime && (c5_elt == c5p_elt);
+	end
+
+	% expf2_equals_expf2_out = true;
+	% for ef1_idx = 1:length(ExpF1)
+	% 	expf_elt = ExpF1(ef1_idx);
+	% 	expfo_elt = ExpF1_out(ef1_idx);
+
+	% 	expf1_equals_expf1_out = expf1_equals_expf1_out && ( expf_elt == expfo_elt );
+	% end
+
+	% expg1_equals_expg1_out = true;
+	% for eg1_idx = 1:length(ExpG1)
+	% 	expg_elt = ExpG1(eg1_idx);
+	% 	expgo_elt = ExpG1_out(eg1_idx);
+
+	% 	expg1_equals_expg1_out = expg1_equals_expg1_out && ( expg_elt == expgo_elt );
+	% end
+
+	% expx1_equals_expx1_prime = true;
+	% for ex1_idx = 1:length(ExpX1)
+	% 	expx_elt = ExpX1(ex1_idx);
+	% 	expxp_elt = ExpX1_prime(ex1_idx);
+
+	% 	expx1_equals_expx1_prime = expx1_equals_expx1_prime && ( expx_elt == expxp_elt );
+	% end
+	% disp( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) )
+	% disp( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) )
 
 	assert( s_subset_q && ...
 			cover4_is_subset_of_cover4_prime && (length(cover4) == (length(cover4_prime) - 1)) && ...

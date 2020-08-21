@@ -5,7 +5,7 @@ This repository is based on the work of `On abstraction-based controller design 
 
 This repository relies on the following external toolboxes/packages:
 * [YALMIP](https://yalmip.github.io/): https://yalmip.github.io/
-* [pcis](https://github.com/pettni/pcis): https://github.com/pettni/pcis
+* [pcis](https://github.com/zexiangliu/pcis/tree/pre_intersect): https://github.com/zexiangliu/pcis/tree/pre_intersect
 
 ## Learning How to Use This Repository
 
