@@ -3,16 +3,11 @@ function [S_hat] = KAM( varargin )
 	%	Implementation of the Knowledge Abstraction and Minimization algorithm (Algorithm 2 from Majumdar, Ozay and Schmuck 2020)
 	%	
 	%Usage:
-	%	[S_hat] = st.KAM( Hinv )
-	%	[S_hat] = st.KAM( Hinv , 'MaximumIterations' , MaximumIterations )
+	%	[S_hat] = st.KAM()
+	%	[S_hat] = st.KAM( ... , 'MaximumIterations' , MaximumIterations )
 	%	[S_hat] = st.KAM( ... , 'Debug' , tf )
 	%
 	%Inputs:
-	%	Hinv: A st.numY x 1 array of PolyUnion or Polyhedra objects.
-	%		  Defines the mapping from measurements to the set of states that correspond to it.
-	%		  Recall that observarions are finite and should be represented by a number in the
-	%		  range {1,...,st.numY}.
-	%		  Therefore, Hinv{1} = PolyUnion( ... ) = H^{-1}(observation_1)
 	%
 
 
@@ -37,16 +32,11 @@ function [S_hat] = KAM_PolyUnion( varargin )
 	%	Uses the type of Hinv to detect this.
 	%	
 	%Usage:
-	%	[S_hat] = st.KAM( Hinv )
-	%	[S_hat] = st.KAM( Hinv , 'MaximumIterations' , MaximumIterations )
+	%	[S_hat] = st.KAM()
+	%	[S_hat] = st.KAM( ... , 'MaximumIterations' , MaximumIterations )
 	%	[S_hat] = st.KAM( ... , 'Debug' , tf )
 	%
 	%Inputs:
-	%	Hinv: A st.numY x 1 array of PolyUnion or Polyhedra objects.
-	%		  Defines the mapping from measurements to the set of states that correspond to it.
-	%		  Recall that observarions are finite and should be represented by a number in the
-	%		  range {1,...,st.numY}.
-	%		  Therefore, Hinv{1} = PolyUnion( ... ) = H^{-1}(observation_1)
 	%
 
 
@@ -192,8 +182,8 @@ function [S_hat] = KAM_Polyhedron( varargin )
 	%	Implementation of the Knowledge Abstraction and Minimization algorithm (Algorithm 2 from Majumdar, Ozay and Schmuck 2020)
 	%	
 	%Usage:
-	%	[S_hat] = st.KAM( Hinv )
-	%	[S_hat] = st.KAM( Hinv , 'MaximumIterations' , MaximumIterations )
+	%	[S_hat] = st.KAM( )
+	%	[S_hat] = st.KAM( ... , 'MaximumIterations' , MaximumIterations )
 	%	[S_hat] = st.KAM( ... , 'Debug' , tf )
 	%
 	%Inputs:
@@ -237,6 +227,10 @@ function [S_hat] = KAM_Polyhedron( varargin )
 
 	if ~exist('Debug')
 		Debug = false;
+	end
+
+	if ~exist('CheckCoverConvergence')
+		CheckCoverConvergence = true;
 	end
 
 	%% Algorithm %%
@@ -286,10 +280,16 @@ function [S_hat] = KAM_Polyhedron( varargin )
 			temp_maximal_elt = maximal_subset_ExpX(maximal_elt_idx);
 
 			for u = 1:st.nu()
-				for y = 1:st.numY
+				for y = 1:st.ny()
 					v_prime = [ temp_maximal_elt.v , u , y ];
 					c_prime = st.F( temp_maximal_elt.c , u );
 					c_prime = c_prime.intersect( st.HInverse(y) );
+
+					%Skip this loop if c_prime is empty?
+					if c_prime.isEmptySet
+						continue;
+					end
+
 					Q_prime = get_minimal_covering_subsets_for( c_prime , Cover );
 
 					for q_prime_idx = 1:length(Q_prime)

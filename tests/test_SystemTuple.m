@@ -11,8 +11,6 @@ function st1 = get_simple_SystemTuple1()
 	%Description:
 	%	Returns a very simple SystemTuple object.
 
-	tf = check_for_gurobi();
-
 	%% Constants
 
 	X = Polyhedron('lb',-2,'ub',2);
@@ -521,7 +519,6 @@ function test1_extract_ets(testCase)
 	assert( (length(ets_out.X) == (length(ExpX1) - 1)) && ...
 			(length(ets_out.X0) == (length(st1.HInverse)) ) && ...
 			(length(ExpF1) == length(ets_out.x0) ) && ...
-			(length(ets_out.HInverse) == ets_out.ny() ) && ...
-			(true) )
+			(length(ets_out.HInverse) == st1.ny() ) )
 
 end

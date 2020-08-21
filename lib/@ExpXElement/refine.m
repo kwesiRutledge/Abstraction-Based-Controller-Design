@@ -9,10 +9,10 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 	switch class(Cover_in(1))
 		case 'PolyUnion'
 			[ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
-				refine_PolyUnion( obj , System_in , Cover_in , EXP_F_in , EXP_Gamma_in , EXP_X_in )
+				refine_PolyUnion( obj , System_in , Cover_in , EXP_F_in , EXP_Gamma_in , EXP_X_in );
 		case 'Polyhedron'
 			[ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
-				refine_Polyhedron( obj , System_in , Cover_in , EXP_F_in , EXP_Gamma_in , EXP_X_in )
+				refine_Polyhedron( obj , System_in , Cover_in , EXP_F_in , EXP_Gamma_in , EXP_X_in );
 		otherwise
 			error(['Cover is made up of unexpected objects of type ' class(Cover_in(1)) ])
 	end
@@ -47,7 +47,9 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 		warning('The handling of s is incorrect in refine_Polyhedron!')
 	end
 
-	%disp(class(s))
+	if temp_s.Num == 0
+		warning('s is empty!')
+	end
 
 	%Check if s <= q
 
