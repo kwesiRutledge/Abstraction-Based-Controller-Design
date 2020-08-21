@@ -67,7 +67,7 @@ function test1_oneIteration(testCase)
 
 end
 
-function test1_twoIteration(testCase)
+function test1_twoIterations(testCase)
 	%Description:
 	%	Checking what happens after one iteration of the KAM algorithm.
 	%	Hoping that Cover is updated.

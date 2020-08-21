@@ -76,9 +76,9 @@ function [ExpF1 , ExpX1 , num_U] = get_simple_ExpF1()
 	num_U = 2;
 
 	%Create some ExpXElements
-	Cover1 = [ 	Polyhedron('lb',-2,'ub',-1) , ...
-				Polyhedron('lb',-1,'ub',1) , ...
-				Polyhedron('lb',1,'ub',2) ];
+	Cover1 = [ 	PolyUnion(Polyhedron('lb',-2,'ub',-1)) , ...
+				PolyUnion(Polyhedron('lb',-1,'ub',1)) , ...
+				PolyUnion(Polyhedron('lb',1,'ub',2)) ];
 
 	expx1 = ExpXElement( 1 , Cover1(1) , Cover1(1) );
 	expx2 = ExpXElement( 1 , Cover1(1) , Cover1(2) );
@@ -121,8 +121,8 @@ function test1_get_PostQ_u(testCase)
 	% temp_PostQ{1}
 
 	assert((length(temp_PostQ) == 2) && ...
-			( temp_PostQ{1} == PolyUnion(example_ExpX1(2).q) ) && ...
-			( temp_PostQ{2} == PolyUnion(example_ExpX1(1).q) ) )
+			( temp_PostQ{1} == example_ExpX1(2).q ) && ...
+			( temp_PostQ{2} == example_ExpX1(1).q ) )
 
 end
 
@@ -149,7 +149,7 @@ function test2_get_PostQ_u(testCase)
 	temp_PostQ = temp_ExpXElement.get_PostQ_u( example_ExpF1 , num_U );
 
 	assert(	(length(temp_PostQ) == 2) && ...
-			(temp_PostQ{1} == PolyUnion(example_ExpX1(4).q) ) && ...
+			(temp_PostQ{1} == example_ExpX1(4).q ) && ...
 			isempty(temp_PostQ{2}) )
 
 end
@@ -163,9 +163,9 @@ function [ExpF2 , ExpX2 , num_U] = get_simple_ExpF2()
 	num_U = 2;
 
 	%Create some ExpXElements
-	Cover2 = [ 	Polyhedron('lb',-2,'ub',-1) , ...
-				Polyhedron('lb',-1,'ub',1) , ...
-				Polyhedron('lb',1,'ub',2) ];
+	Cover2 = [ 	PolyUnion(Polyhedron('lb',-2,'ub',-1)) , ...
+				PolyUnion(Polyhedron('lb',-1,'ub',1)) , ...
+				PolyUnion(Polyhedron('lb',1,'ub',2)) ];
 
 	expx1 = ExpXElement( 1 , Cover2(1) , Cover2(1) );
 	expx2 = ExpXElement( 1 , Cover2(1) , Cover2(2) );
@@ -211,8 +211,8 @@ function test3_get_PostQ_u(testCase)
 	temp_PostQ = temp_ExpXElement.get_PostQ_u( example_ExpF3 , num_U );
 
 	assert(	(length(temp_PostQ) == 2) && ...
-			(temp_PostQ{1} == PolyUnion(example_ExpX3(2).q) ) && ...
-			(temp_PostQ{2} == PolyUnion([example_ExpX3(1).q,example_ExpX3(5).q ]) ) )
+			(temp_PostQ{1} == example_ExpX3(2).q ) && ...
+			(temp_PostQ{2} == PolyUnion([example_ExpX3(1).q.Set,example_ExpX3(5).q.Set ]) ) )
 
 end
 
@@ -222,13 +222,13 @@ function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system1()
 
 	%% Create System
 
-	X = Polyhedron('lb',-2,'ub',2);
+	X = PolyUnion(Polyhedron('lb',-2,'ub',2));
 	X0 = X;
 
 	num_U = 2; %There are only two inputs allowed
 	%F = @one_dim_example_transition;
-	DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
-				Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+	DynList = [ Dyn(1,1,0,X.Set(1)*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(1,-1,0,X.Set(1)*Polyhedron('lb',0,'ub',0)) ];
 
 	num_y = 3; %There are only three outputs.
 	H = @one_dim_example_output;
@@ -463,13 +463,13 @@ function [st_out, expx_out , expf_out, num_U , cover_out ] = get_test_system2()
 
 	%% Create System
 
-	X = Polyhedron('lb',-2,'ub',2);
+	X = PolyUnion(Polyhedron('lb',-2,'ub',2));
 	X0 = X;
 
 	num_U = 2; %There are only two inputs allowed
 	%F = @one_dim_example_transition;
-	DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
-				Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+	DynList = [ Dyn(1,1,0,X.Set(1)*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(1,-1,0,X.Set(1)*Polyhedron('lb',0,'ub',0)) ];
 
 	num_y = 3; %There are only three outputs.
 	H = @one_dim_example_output;
@@ -768,7 +768,7 @@ function test5_refine(testCase)
 	tf = check_for_pcis();
 
 	%% Constants
-	[st_out, ExpX5 , ExpF5 , num_U , cover5 ] = get_test_system1();
+	[st_out, ExpX5 , ExpF5 , num_U , cover5 ] = get_test_system3();
 	ExpG5 = [];
 	for expx_idx = 1:length(ExpX5)
 		temp_ExpXElement = ExpX5(expx_idx);
@@ -776,7 +776,7 @@ function test5_refine(testCase)
 		ExpG5 = [ ExpG5 , ExpGammaElement( temp_ExpXElement ) ];
 	end
 
-	target_tuple = ExpX5(7);
+	target_tuple = ExpX5(end);
 
 	%% Algorithm
 	[ cover5_prime , ExpF5_out , ExpG5_out , ExpX5_prime ] = ...
@@ -792,17 +792,17 @@ function test5_refine(testCase)
 	% 	end
 	% end
 
-	s = st_out.pre_input_dependent( post_Q )
+	s = st_out.pre_input_dependent( post_Q );
 
-	s_subset_q = PolyUnion_subseteq(s,target_tuple.q);
+	s_subset_q = (s <= target_tuple.q);
+	s_strictsubset_q = (s <= target_tuple.q) && (s ~= target_tuple.q);
 
 	%s should be [0,2], technically PolyUnion([Polyhedron('lb',0,'ub',2)])
 	%target_tuple.q should be [0,2], technically PolyUnion([Polyhedron('')])
-	%Therefore, s_subset_q should be TRUE
+	%Therefore, s_subset_q and c_strictsubset_s should be TRUE
 	%And:
 	%	- cover5_prime == cover5 U s
-	%	- ExpX5(2) == ExpXElement( 1 , PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , cover_out(2) );
-	%	- ExpX5(6) == ExpXElement( 1 , PolyUnion( Polyhedron('lb',0,'ub',2 ) ) , cover_out(3) );
+	%	- ExpF5_out == ExpF5
 	%	- ExpG5_out == ExpG5
 	%	- ExpX5_out == ExpX5
 
@@ -814,40 +814,32 @@ function test5_refine(testCase)
 		cover5_is_subset_of_cover5_prime = cover5_is_subset_of_cover5_prime && (c5_elt == c5p_elt);
 	end
 
-	% expf2_equals_expf2_out = true;
-	% for ef1_idx = 1:length(ExpF1)
-	% 	expf_elt = ExpF1(ef1_idx);
-	% 	expfo_elt = ExpF1_out(ef1_idx);
+	expf5_equals_expf5_out = true;
+	for ef5_idx = 1:length(ExpF5)
+		expf_elt = ExpF5(ef5_idx);
+		expfo_elt = ExpF5_out(ef5_idx);
 
-	% 	expf1_equals_expf1_out = expf1_equals_expf1_out && ( expf_elt == expfo_elt );
-	% end
+		expf5_equals_expf5_out = expf5_equals_expf5_out && ( expf_elt == expfo_elt );
+	end
 
-	% expg1_equals_expg1_out = true;
-	% for eg1_idx = 1:length(ExpG1)
-	% 	expg_elt = ExpG1(eg1_idx);
-	% 	expgo_elt = ExpG1_out(eg1_idx);
+	expg5_equals_expg5_out = true;
+	for eg5_idx = 1:length(ExpG5)
+		expg_elt = ExpG5(eg5_idx);
+		expgo_elt = ExpG5_out(eg5_idx);
 
-	% 	expg1_equals_expg1_out = expg1_equals_expg1_out && ( expg_elt == expgo_elt );
-	% end
+		expg5_equals_expg5_out = expg5_equals_expg5_out && ( expg_elt == expgo_elt );
+	end
 
-	% expx1_equals_expx1_prime = true;
-	% for ex1_idx = 1:length(ExpX1)
-	% 	expx_elt = ExpX1(ex1_idx);
-	% 	expxp_elt = ExpX1_prime(ex1_idx);
+	expx5_equals_expx5_prime = true;
+	for ex5_idx = 1:length(ExpX5)
+		expx_elt = ExpX5(ex5_idx);
+		expxp_elt = ExpX5_prime(ex5_idx);
 
-	% 	expx1_equals_expx1_prime = expx1_equals_expx1_prime && ( expx_elt == expxp_elt );
-	% end
-	% disp( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) )
-	% disp( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) )
+		expx5_equals_expx5_prime = expx5_equals_expx5_prime && ( expx_elt == expxp_elt );
+	end
 
-	assert( s_subset_q && ...
-			cover4_is_subset_of_cover4_prime && (length(cover4) == (length(cover4_prime) - 1)) && ...
-			(cover4_prime(end) == s ) && ...
-			( ExpX4_prime(6) ~= ExpXElement( 1 , s , cover4(3) )) && ... %This entry should not be changed in X3
-			( ExpX4_prime(7) == ExpXElement( 1 , s , cover4(6) )) && ...
-			( ExpF4_out(7).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
-			( ExpF4_out(8).ExpXElt == ExpXElement( 1 , s , cover4(6) )) && ...
-			( ExpG4_out(6) ~= ExpGammaElement( ExpXElement( 1 , s , cover4(3) )) ) && ...
-			( ExpG4_out(7) == ExpGammaElement( ExpXElement( 1 , s , cover4(6) )) ) )
+	assert( s_strictsubset_q && s_subset_q && ...
+			cover5_is_subset_of_cover5_prime && (length(cover5) == (length(cover5_prime) - 1)) && ...
+			expf5_equals_expf5_out && expg5_equals_expg5_out && expx5_equals_expx5_prime )
 
 end

@@ -127,7 +127,8 @@ classdef ExpXElement
 			%	one can reach the cover element q.
 			%
 			%Outputs
-			%	post_Q - A cell array of arrays of Polyhedron() objects.
+			%	post_Q - A cell array of arrays of Polyhedron() or PolyUnion() objects.
+			%			 The type within the array is determined by the type of obj.q.
 			%
 			%Note to self:
 			%	- It is possible that this function will create duplicate elements
@@ -155,11 +156,7 @@ classdef ExpXElement
 						end
 
 						%Append to array post_Q
-						if isempty(temp_post_Q_u)
-							post_Q{u} = temp_post_Q_u;
-						else
-							post_Q{u} = PolyUnion(temp_post_Q_u);
-						end
+						post_Q{u} = temp_post_Q_u;
 
 					end
 				case 'PolyUnion'

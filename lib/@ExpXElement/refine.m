@@ -40,21 +40,20 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 
 	post_Q = obj.get_PostQ_u( EXP_F_in , System_in.nu() );
 
-	temp_s = System_in.pre_input_dependent( post_Q );
-	s = temp_s.Set(1); %I suspect that temp_s should always have a single element.
+	s = System_in.pre_input_dependent( post_Q );
 
-	if temp_s.Num > 1
+	%Some debugging info
+	if length(s) > 1
 		warning('The handling of s is incorrect in refine_Polyhedron!')
 	end
 
-	if temp_s.Num == 0
+	if s.isEmptySet
 		warning('s is empty!')
 	end
 
-	%Check if s <= q
+	s = s.intersect(obj.q);
 
-	% disp(class(s))
-	% disp(class(obj.q))
+	%Check if s <= q
 
 	if  s < obj.q 
 		%If s is a proper subset of q
