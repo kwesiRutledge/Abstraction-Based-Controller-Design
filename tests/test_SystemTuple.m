@@ -333,6 +333,44 @@ function test3_pre_input_dependent(testCase)
 
 end
 
+function test3_pre_input_dependent(testCase)
+	%Description:
+	%	Tests the pre_input_dependent() method for the system.
+	%	Verifies the behavior when pre_input_dependent() returns an empty array.
+
+	%% Include Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+	tf = check_for_gurobi();
+
+	%% Constants
+
+	X = Polyhedron('lb',-4,'ub',4);
+	X0 = Polyhedron('lb',-2,'ub',2);
+
+	num_U = 2; %There are only two inputs allowed
+	DynList = [ Dyn(1,1,0,X*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(1,-1,0,X*Polyhedron('lb',0,'ub',0)) , ...
+				Dyn(-1,-1,0,X*Polyhedron('lb',0,'ub',0)) ];
+
+	HInverse = [Polyhedron('lb',-2,'ub',-1), ...
+				Polyhedron('lb',-1,'ub',1), ...
+				Polyhedron('lb',1,'ub',2) ];
+
+	Y_labels{1} = 'A';
+	Y_labels{2} = 'B';
+	Y_labels{3} = 'C';
+
+	st1 = SystemTuple(X,X0,HInverse,'LinearDynamics',DynList,'YLabels',Y_labels);
+
+	X_list = [ X0 + 1 , X0 - 1 ];
+
+	%% Algorithm
+
+	
+
+end
+
 function test1_F(testCase)
 	%Description:
 	%	Tests the error handling of F() member function.

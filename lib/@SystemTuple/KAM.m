@@ -127,7 +127,7 @@ function [S_hat] = KAM_PolyUnion( varargin )
 
 					for q_prime_idx = 1:length(Q_prime)
 						q_prime = Q_prime(q_prime_idx);
-						temp_expx_elt = ExpXElement( v_prime , c_prime , q_prime );
+						temp_expx_elt = ExpXElement( v_prime , q_prime , c_prime );
 						
 						%Update ExpX
 						ExpX = temp_expx_elt.union_with_set( ExpX );
@@ -153,10 +153,9 @@ function [S_hat] = KAM_PolyUnion( varargin )
 			loop_condition = loop_condition && (curr_iter < MaximumIterations);
 		end
 
-		%Update CoverSequene
+		%Update CoverSequence
 		CoverSequence{curr_iter+1} = Cover;
-
-		if CheckCoverConvergence
+		if CheckCoverConvergence && (curr_iter > 1)
 			loop_condition = loop_condition && ...
 				(~PolyUnionarrays_equal( CoverSequence{curr_iter} , CoverSequence{curr_iter+1} ));
 		end
@@ -248,7 +247,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 		cover_elt = Cover0(cover_elt_idx);
 		intersected = cover_elt.intersect(st.X0);
 
-		if intersected.isEmptySet
+		if intersected.isEmptySet || (intersected.volume == 0)
 			continue;
 		end
 
@@ -259,7 +258,18 @@ function [S_hat] = KAM_Polyhedron( varargin )
 	end
 
 	ExpF0 = [];
-
+    
+    curr_iter = 0;
+    
+    %Debugging Info
+    if Debug
+        disp(['- Iteration #' num2str(curr_iter) ])
+        disp(['  + length(Cover) = ' num2str(length(Cover0)) ])
+        disp(['  + length(ExpX) = ' num2str(length(ExpX0)) ])
+        disp(['  + length(ExpF) = ' num2str(length(ExpF0)) ])
+        disp(['  + length(ExpGamma) = ' num2str(length(ExpGamma0)) ])
+    end
+    
 	%%%%%%%%%%%%%%%
 	%% Main Loop %%
 	%%%%%%%%%%%%%%%
@@ -270,7 +280,6 @@ function [S_hat] = KAM_Polyhedron( varargin )
 	Cover = Cover0;
 	ExpGamma = ExpGamma0;
 
-	curr_iter = 0;
 	loop_condition = true;
 
 	while loop_condition
@@ -286,7 +295,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 					c_prime = c_prime.intersect( st.HInverse(y) );
 
 					%Skip this loop if c_prime is empty?
-					if c_prime.isEmptySet
+					if (c_prime.isEmptySet) || (c_prime.volume == 0)
 						continue;
 					end
 
@@ -294,7 +303,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 
 					for q_prime_idx = 1:length(Q_prime)
 						q_prime = Q_prime(q_prime_idx);
-						temp_expx_elt = ExpXElement( v_prime , c_prime , q_prime );
+						temp_expx_elt = ExpXElement( v_prime , q_prime , c_prime );
 						
 						%Update ExpX
 						ExpX = temp_expx_elt.union_with_set( ExpX );
@@ -305,14 +314,14 @@ function [S_hat] = KAM_Polyhedron( varargin )
 					end
 
 				end
-			end
-
-			%possibly refine.
-			if temp_maximal_elt.c < temp_maximal_elt.q
+            end
+            
+            %possibly refine.
+			if (temp_maximal_elt.c <= temp_maximal_elt.q) && (temp_maximal_elt.c ~= temp_maximal_elt.q)
 				[ Cover , ExpF , ExpGamma , ExpX ] = temp_maximal_elt.refine( st , Cover , ExpF , ExpGamma , ExpX );
 			end
-
-		end
+            
+        end
 
 		%Update loop condition.
 		curr_iter = curr_iter + 1;
@@ -322,7 +331,7 @@ function [S_hat] = KAM_Polyhedron( varargin )
 
 		%Update CoverSequene
 		CoverSequence{curr_iter+1} = Cover;
-		if CheckCoverConvergence
+		if CheckCoverConvergence && (curr_iter > 1)
 			loop_condition = loop_condition && ...
 				(~PolyUnionarrays_equal( CoverSequence{curr_iter} , CoverSequence{curr_iter+1} ));
 		end

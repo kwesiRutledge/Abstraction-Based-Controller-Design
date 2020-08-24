@@ -39,13 +39,24 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 	%% Algorithm
 
 	post_Q = obj.get_PostQ_u( EXP_F_in , System_in.nu() );
-
+    %Check to see if any post_Q elements are empty array
+    for post_Q_idx = 1:length(post_Q)
+    	if isempty(post_Q{post_Q_idx})
+    		%If this is true then end the algorithm,
+    		%the system will admit no useful value of s.
+    		return
+    	end
+    end
+    
 	s = System_in.pre_input_dependent( post_Q );
-
+    if isempty(s)
+        return
+    end
+    
 	%Some debugging info
 	if length(s) > 1
 		warning('The handling of s is incorrect in refine_Polyhedron!')
-	end
+    end
 
 	if s.isEmptySet
 		warning('s is empty!')
@@ -55,7 +66,7 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 
 	%Check if s <= q
 
-	if  s < obj.q 
+	if (s <= obj.q) && (s ~= obj.q)
 		%If s is a proper subset of q
 
 		%Update the cover
@@ -74,7 +85,7 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 
 			%For the expx_elt's whose q value matches obj.q,
 			%check the c value.
-			if expx_elt.c < s 
+			if (expx_elt.c <= s) && (expx_elt.c ~= s)
 				EXP_Gamma_out = change_tuples_in_list( EXP_Gamma_out , expx_elt , s );
 				EXP_F_out = change_tuples_in_list( EXP_F_out , expx_elt , s );
 				EXP_X_out = change_tuples_in_list( EXP_X_out , expx_elt , s );
@@ -87,9 +98,10 @@ function [ Cover_out , EXP_F_out , EXP_Gamma_out , EXP_X_out ] = ...
 			expf_elt = EXP_F_out(expf_idx);
 
 			source_expx = expf_elt.ExpXElt;
+            target_expx = expf_elt.ExpXEltPrime;
 
-			if ( expf_elt.ExpXEltPrime.q == s ) && (source_expx.c < source_expx.q)
-				[ Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out ] = source_expx.refine( ...
+			if ( source_expx.q == s ) && ( (target_expx.c <= target_expx.q) && (target_expx.c ~= target_expx.q) )
+				[ Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out ] = target_expx.refine( ...
 					System_in , Cover_out , EXP_F_out ,  EXP_Gamma_out , EXP_X_out );
 			end
 

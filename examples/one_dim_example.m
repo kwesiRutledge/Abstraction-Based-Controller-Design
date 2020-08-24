@@ -33,9 +33,9 @@ DynList = [ Dyn(1,1,0,dom*Polyhedron('lb',0,'ub',0)) , ...
 
 num_y = 3; %There are only three outputs.
 H = @one_dim_example_output;
-Hinv = [ PolyUnion(Polyhedron('lb',-2,'ub',-1)) , ...
-		 PolyUnion(Polyhedron('lb',-1,'ub',1)) , ...
-		 PolyUnion(Polyhedron('lb',1,'ub',2)) ];
+Hinv = [ Polyhedron('lb',-2,'ub',-1) , ...
+		 Polyhedron('lb',-1,'ub',1) , ...
+		 Polyhedron('lb',1,'ub',2) ];
 
 Y_labels{1} = 'A';
 Y_labels{2} = 'B';
@@ -45,6 +45,7 @@ st_oneD = SystemTuple(X,X0,Hinv,'LinearDynamics',DynList);
 
 use_script = false;
 use_function = true;
+use_convergencecheck = false;
 
 max_iter = 3;
 
@@ -52,6 +53,7 @@ disp('- Defined Constants')
 disp(['  + use_script = ' num2str(use_script) ] )
 disp(['  + use_function = ' num2str(use_function) ] )
 disp(['  + max_iter = ' num2str(max_iter) ])
+disp(['  + use_convergencecheck = ' num2str(use_convergencecheck) ])
 disp(' ')
 
 %%%%%%%%%%%%%%%%%
@@ -62,7 +64,7 @@ if use_function
 	disp('Using the KAM Function to create external trace system.')
 
 	fcn_start = tic;
-	ets_out_fcn = st_oneD.KAM( 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , false )
+	ets_out_fcn = st_oneD.KAM( 'MaximumIterations' , max_iter , 'Debug' , true , 'CheckCoverConvergence' , use_convergencecheck )
 	function_time = toc(fcn_start);
 
 	disp('- Completed KAM function.')

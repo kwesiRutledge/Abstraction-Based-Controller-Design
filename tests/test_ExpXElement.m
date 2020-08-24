@@ -843,3 +843,43 @@ function test5_refine(testCase)
 			expf5_equals_expf5_out && expg5_equals_expg5_out && expx5_equals_expx5_prime )
 
 end
+
+function test6_refine(testCase)
+	%Description:
+	%	Tests the ability of the refine object to return a Polyhedron when its key system components
+	%	are defined as Polyhedron() objects.
+
+	%% Including Libraries
+	addpath(genpath('../lib/'))
+	tf = check_for_pcis();
+
+	%% Constants
+	[st_out, ExpX5 , ExpF5 , num_U , cover5 ] = get_test_system3();
+	ExpG5 = [];
+	for expx_idx = 1:length(ExpX5)
+		temp_ExpXElement = ExpX5(expx_idx);
+
+		ExpG5 = [ ExpG5 , ExpGammaElement( temp_ExpXElement ) ];
+	end
+
+	target_tuple = ExpX5(end);
+
+	%% Algorithm
+	[ cover5_prime , ExpF5_out , ExpG5_out , ExpX5_prime ] = ...
+		target_tuple.refine( st_out , cover5 , ExpF5 , ExpG5 , ExpX5 );
+
+	post_Q = target_tuple.get_PostQ_u( ExpF5 , st_out.nu() );
+
+	% post_Q
+
+	% for postq_idx = 1:length(post_Q)
+	% 	for set_idx = 1:post_Q{postq_idx}.Num 
+	% 		post_Q{postq_idx}.Set(set_idx)
+	% 	end
+	% end
+
+	s = st_out.pre_input_dependent( post_Q );
+
+	assert( strcmp(class(s),'Polyhedron') )
+
+end

@@ -147,16 +147,25 @@ classdef ExpXElement
 						%u is given.				
 						temp_post_Q_u = [];
 
+                        %Get intermediate value of Post by iterating
+                        %through expf
 						for expf_idx = 1:length(EXP_F_in)
 							temp_expf_elt = EXP_F_in(expf_idx);
 
 							if (temp_expf_elt.ExpXElt == obj) && (temp_expf_elt.u == u)
 								temp_post_Q_u = [temp_post_Q_u, temp_expf_elt.ExpXEltPrime.q];
 							end
-						end
+                        end
+                        
+                        %Compute Convex Hull of the objects in
+                        %temp_post_Q_u
+                        temp_vertices = [];
+                        for postQ_u_index = 1:length(temp_post_Q_u)
+                            temp_vertices = [temp_vertices; temp_post_Q_u(postQ_u_index).V];
+                        end
 
 						%Append to array post_Q
-						post_Q{u} = temp_post_Q_u;
+						post_Q{u} = Polyhedron('V',temp_vertices);
 
 					end
 				case 'PolyUnion'

@@ -263,7 +263,15 @@ classdef SystemTuple
 					%Return NaN? or []?
 					X_pre = [];
 					return
-				end
+                end
+                
+                if strcmp(class(X_list{x_list_idx}),'Polyhedron')
+                    if X_list{x_list_idx}.isEmptySet
+                        X_pre = [];
+                        return
+                    end
+                end
+                
 			end
 
 			%% Algorithm
