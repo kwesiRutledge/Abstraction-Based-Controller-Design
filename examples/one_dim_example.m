@@ -12,7 +12,7 @@ addpath(genpath([path_to_repo_top 'lib/' ]))
 pcis_enabled = check_for_pcis();
 gurobi_enabled = check_for_gurobi();
 
-mptopt('lpsolver','GUROBI');
+%mptopt('lpsolver','GUROBI');
 
 if ~pcis_enabled
 	error('PCIS and Polyhedron are not currently included in the path. Make sure to include them before running this example.')
